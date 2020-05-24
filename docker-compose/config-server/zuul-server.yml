@@ -1,0 +1,20 @@
+zuul:
+  ignoredServices: '*'
+  routes:
+    auth-service:
+      path: /api/auth
+      serviceId: auth-service
+      stripPrefix: false
+      sensitiveHeaders:
+    person-service:
+      path: /api/peoples/**
+      serviceId: person-service
+      stripPrefix: false
+      sensitiveHeaders:
+    todo-service:
+      path: /api/todos/**
+      serviceId: todo-service
+      stripPrefix: false
+      sensitiveHeaders:
+server:
+  port: 8080

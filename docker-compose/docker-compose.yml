@@ -1,0 +1,101 @@
+version: '3.2'
+services:
+  eureka-server:
+    image: springcloud/eureka
+    container_name: eureka-server
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+    ports:
+      - 8761:8761
+    depends_on:
+      - config-server
+    links:
+      - config-server
+    networks:
+      net:
+        aliases:
+          - eureka-server
+
+  config-server:
+    image: springcloud/configserver
+    container_name: config-server
+    environment:
+      - EUREKA_SERVICE_URL=http://eureka-server:8761
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:./config-server
+    ports:
+      - 8888:8888
+    volumes:
+      - ./config-server:/config-server:ro
+    networks:
+      net:
+        aliases:
+          - config-server
+
+  zuul-server:
+    image: zuul-server:0.0.1-SNAPSHOT
+    container_name: zuul-server
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULT_ZONE=http://service-discovery:8761/eureka/
+    ports:
+      - 8080:8080
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      net:
+        aliases:
+          - zuul-server
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+#    depends_on:
+#      - spring-boot
+#      - quarkus
+#    links:
+#      - spring-boot
+#      - quarkus
+    networks:
+      net:
+        aliases:
+          - prometheus
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    depends_on:
+      - prometheus
+    links:
+      - prometheus
+    networks:
+      net:
+        aliases:
+          - grafana
+
+  setup_grafana_datasource:
+    image: appropriate/curl
+    container_name: setup_grafana_datasource
+    depends_on:
+      - grafana
+    volumes:
+      - ./create-datasource-and-dashboard.sh:/create.sh:ro
+      - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources:ro
+    command: /create.sh
+    networks:
+      net:
+        aliases:
+          - setup_grafana_datasource
+
+networks:
+  net:
