@@ -1,0 +1,13 @@
+spring:
+    application:
+        name: person-service
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    public-key-location: ${PUBLIC_KEY_PATH:file:/tmp/authPublicKey.pem}
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health, info, prometheus

@@ -1,2 +1,18 @@
 server:
-  port: 0
+  port: ${SERVER_PORT:0}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+---
+spring:
+  profiles: prod
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info, health, prometheus

@@ -1,5 +1,16 @@
 version: '3.2'
 services:
+  mongodb-database:
+    image: mongo:3.4.10
+    command: mongod --port 27017
+    container_name: mongodb-database
+    ports:
+      - 27017:27017
+    networks:
+      net:
+        aliases:
+          - mongodb-database
+
   eureka-server:
     image: springcloud/eureka
     container_name: eureka-server
@@ -47,6 +58,40 @@ services:
       net:
         aliases:
           - zuul-server
+
+  person-service:
+    image: person-service:0.0.1-SNAPSHOT
+    container_name: person-service
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULT_ZONE=http://service-discovery:8761/eureka/
+      - SERVER_PORT=8081
+    ports:
+      - 8081:8081
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      net:
+        aliases:
+          - person-service
+
+  todo-service:
+    image: todo-service
+    container_name: todo-service
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_SERVER_URL=http://service-discovery:8761/eureka/
+      - QUARKUS_HTTP_PORT=8083
+    ports:
+      - 8083:8083
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      net:
+        aliases:
+          - person-service
 
   prometheus:
     image: prom/prometheus
