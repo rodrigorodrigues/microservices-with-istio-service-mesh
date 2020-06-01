@@ -1,3 +1,12 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: ${CERT_PUBLICKEY:file:/tmp/authPublicKey.pem}
+  sleuth:
+    sampler:
+      probability: 1
 server:
   port: ${SERVER_PORT:0}
 
@@ -7,9 +16,21 @@ management:
       exposure:
         include: "*"
 
+eureka:
+  instance:
+    prefer-ip-address: true
+    statusPageUrlPath: /actuator/info
+    healthCheckUrlPath: /actuator/health
+  client:
+    healthcheck:
+      enabled: true
 ---
 spring:
   profiles: prod
+
+  sleuth:
+    sampler:
+      probability: 0.1
 
 management:
   endpoints:

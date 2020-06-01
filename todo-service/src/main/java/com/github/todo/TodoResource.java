@@ -3,7 +3,6 @@ package com.github.todo;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -27,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.eureka.client.EurekaClient;
 import io.quarkus.eureka.client.loadBalancer.LoadBalanced;
 import io.quarkus.eureka.client.loadBalancer.LoadBalancerType;
@@ -61,29 +61,32 @@ public class TodoResource {
     @Inject
     JsonWebToken jwt;
 
+    @Inject
+    ObjectMapper objectMapper;
+
     @GET
-    @Timed(name = "getAllActiveCompaniesTimed",
-            description = "Monitor the time getAllActiveCompanies method takes",
+    @Timed(name = "getAllTodosTimed",
+            description = "Monitor the time getAllTodos method takes",
             unit = MetricUnits.MILLISECONDS,
             absolute = true)
-    @Metered(name = "getAllActiveCompaniesMetered",
+    @Metered(name = "getAllTodosMetered",
             unit = MetricUnits.MILLISECONDS,
             description = "Monitor the rate events occurred",
             absolute = true)
     @Counted(
-            name = "getAllActiveCompaniesCounted",
+            name = "getAllTodosCounted",
             absolute = true,
-            displayName = "getAllActiveCompanies",
-            description = "Monitor how many times getAllActiveCompanies method was called")
+            displayName = "getAllTodos",
+            description = "Monitor how many times getAllTodos method was called")
     @RolesAllowed({"todo:read", "admin"})
     @Fallback(fallbackMethod = "fallback")
-    public Response getAllActiveTodos(@QueryParam("pageSize") @DefaultValue("10") Integer pageSize,
+    public Response getAllTodos(@QueryParam("pageSize") @DefaultValue("10") Integer pageSize,
             @Context SecurityContext ctx) {
         List<Todo> todos;
         if (ctx.isUserInRole("admin")) {
-            todos = Todo.findActiveTodos(pageSize);
+            todos = Todo.findAll(pageSize);
         } else {
-            todos = Todo.findActiveTodosByPerson(pageSize, ctx.getUserPrincipal().getName());
+            todos = Todo.findTodosByPersonId(pageSize, ctx.getUserPrincipal().getName());
         }
         List<TodoDto> todosDto = todoMapper.toResource(todos);
         todosDto.forEach(t -> t.setPersonName(getPersonNameByEureka(t.getPersonId())));
@@ -92,7 +95,7 @@ public class TodoResource {
 
     public Response fallback(Integer pageSize, SecurityContext ctx) {
         TodoDto todoDto = new TodoDto();
-        todoDto.setLastModifiedDate(null);
+        todoDto.setCreatedDate(null);
         todoDto.setName(String.format("Some error occurred! - please try later - %s", ctx.getUserPrincipal().getName()));
         return Response.status(Response.Status.SERVICE_UNAVAILABLE)
                 .entity(Collections.singletonList(todoDto))
@@ -100,14 +103,19 @@ public class TodoResource {
     }
 
     private String getPersonNameByEureka(String personId) {
-        Map person = eurekaClient.app("person-service")
-                .path("/api/people/" + personId)
-                .request(MediaType.APPLICATION_JSON_TYPE)
-                .header(HttpHeaders.AUTHORIZATION, jwt.getRawToken())
-                .get()
-                .readEntity(Map.class);
-        log.info("EurekaClient:content: {}", person);
-        return (String) person.get("name");
+        try {
+            String json = eurekaClient.app("person-service")
+                    .path("/api/people/" + personId)
+                    .request(MediaType.APPLICATION_JSON_TYPE)
+                    .header(HttpHeaders.AUTHORIZATION, jwt.getRawToken())
+                    .get()
+                    .readEntity(String.class);
+            log.info("EurekaClient:json: {}", json);
+            return objectMapper.readValue(json, PersonDto.class).name;
+        } catch (Exception e) {
+            log.warn("Error on method getPersonNameByEureka", e);
+            return "mocked-name";
+        }
     }
 
     @GET
@@ -124,7 +132,7 @@ public class TodoResource {
     public Response create(@Valid TodoDto todoDto) {
         Todo todo = todoMapper.toModel(todoDto);
         todo.persist();
-        return Response.created(URI.create(String.format("/api/people/%s", todo.id)))
+        return Response.created(URI.create(String.format("/api/todos/%s", todo.id)))
                                 .entity(todoMapper.toResource((todo)))
                                 .build();
     }
@@ -137,7 +145,9 @@ public class TodoResource {
                 .map(t -> {
                     t.name = todoDto.getName();
                     t.personId = todoDto.getPersonId();
-                    t.activated = todoDto.isActivated();
+                    if (todoDto.getDone() != null) {
+                        t.done = todoDto.getDone();
+                    }
                     t.update();
                     return Response.ok(t).build();
                 })
@@ -165,7 +175,7 @@ public class TodoResource {
         TodoDto toResource(Todo todo);
         default List<TodoDto> toResource(List<Todo> todos) {
             return todos.stream()
-                    .map(t -> new TodoDto(t.name, t.personId, null, t.activated, t.lastModifiedDate))
+                    .map(t -> new TodoDto(t.name, t.personId, null, t.done, t.createdDate, t.plannedEndDate, t.category))
                     .collect(Collectors.toList());
         }
         Todo toModel(TodoDto todoDto);

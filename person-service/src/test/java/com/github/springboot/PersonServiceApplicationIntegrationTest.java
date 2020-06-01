@@ -152,10 +152,7 @@ public class PersonServiceApplicationIntegrationTest {
 		stubFor(WireMock.get(urlPathEqualTo("/.well-known/jwks.json"))
 				.willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).withBody(jsonPublicKey)));
 
-        person = personRepository.save(Person.builder()
-            .name("Person Master")
-            .createdByUser("master@gmail.com")
-            .build());
+        person = personRepository.save(new Person("Person Master", "master@gmail.com"));
     }
 
     @AfterEach
@@ -187,7 +184,7 @@ public class PersonServiceApplicationIntegrationTest {
 
 	@Test
     @DisplayName("Test - When Calling POST - /api/people should create a new person and response 201 - Created")
-	public void shouldInsertNewCompanyWhenCallApi() throws Exception {
+	public void shouldInsertNewPersonWhenCallApi() throws Exception {
 		String authorizationHeader = authorizationHeader("master@gmail.com");
 		PersonDto person = createPerson();
 
@@ -235,12 +232,12 @@ public class PersonServiceApplicationIntegrationTest {
 	public void shouldResponseForbiddenWhenCallApiWithoutRightPermission() throws Exception {
 		String authorizationHeader = authorizationHeader("anonymous@gmail.com");
 
-		PersonDto company = createPerson();
+		PersonDto person = createPerson();
 
 		mockMvc.perform(post("/api/people")
 				.header(HttpHeaders.AUTHORIZATION, authorizationHeader)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(convertToJson(company)))
+				.content(convertToJson(person)))
 				.andExpect(status().isForbidden());
 	}
 

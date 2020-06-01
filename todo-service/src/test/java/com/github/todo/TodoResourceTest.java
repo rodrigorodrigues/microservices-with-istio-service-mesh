@@ -2,6 +2,7 @@ package com.github.todo;
 
 import javax.inject.Inject;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -31,6 +32,12 @@ public class TodoResourceTest {
     @Inject
     AppLifecycleBean appLifecycleBean;
 
+    @Inject
+    JacksonCustomizer jacksonCustomizer;
+
+    @Inject
+    ObjectMapper objectMapper;
+
     @ConfigProperty(name = "quarkus.http.test-port")
     Integer assignedPort;
 
@@ -44,58 +51,66 @@ public class TodoResourceTest {
 
     @BeforeEach
     public void setup() {
+        jacksonCustomizer.customize(objectMapper);
         Todo.deleteAll();
         appLifecycleBean.onStart(Mockito.mock(StartupEvent.class));
     }
 
     @Test
-    @DisplayName("Test - When Calling DELETE - /api/todos/{id} with admin user should delete resource - 204")
-    public void testDeleteTodo() {
+    @DisplayName("Test - When Calling DELETE - /api/todos/{id} with invalid permission should response forbidden - 403")
+    public void testDeleteTodo() throws Exception {
         Todo todo = new Todo();
         todo.name = "Test";
         todo.personId = "admin";
         todo.persist();
 
+        String authorization = tokenUtils.generateTokenString(new TokenUtils.AuthorizationDto("test", new String[] {"todo:create"}));
+
         given()
                 .when()
-                .auth().preemptive().basic("admin", "admin")
+                .header(HttpHeaders.AUTHORIZATION, authorization)
                 .delete("/api/todos/{id}", todo.id.toHexString())
                 .then()
-                .statusCode(204);
+                .statusCode(403);
     }
 
     @Test
-    @DisplayName("Test - When Calling POST - /api/todos with admin user should create resource - 204")
-    public void testCreateTodo() {
+    @DisplayName("Test - When Calling POST - /api/todos with admin user should create resource - 201")
+    public void testCreateTodo() throws Exception {
         TodoDto todoDto = new TodoDto();
         todoDto.setName("new Todo");
         todoDto.setPersonId("admin");
+        todoDto.setCategory(Category.OTHER);
+
+        String authorization = tokenUtils.generateTokenString(new TokenUtils.AuthorizationDto("test", new String[] {"todo:create"}));
 
         given()
                 .when()
-                .auth().preemptive().basic("admin", "admin")
+                .header(HttpHeaders.AUTHORIZATION, authorization)
                 .body(todoDto)
                 .contentType(ContentType.JSON)
                 .post("/api/todos")
                 .then()
                 .statusCode(201)
                 .header(HttpHeaders.LOCATION, containsString("/api/todos/"))
-                .body("lastModifiedDate", is(notNullValue()))
+                .body("createdDate", is(notNullValue()))
                 .body("personId", is("admin"))
                 .body("name", is("new Todo"));
     }
 
     @Test
     @DisplayName("Test - When Calling DELETE - /api/todos/{id} should response 204 - No Content")
-    public void testDeleteTodoWithoutRoleShouldResponseForbidden() {
+    public void testDeleteTodoWithoutRoleShouldResponseForbidden() throws Exception {
         Todo todo = new Todo();
         todo.name = "Test";
         todo.personId = "test";
         todo.persist();
 
+        String authorization = tokenUtils.generateTokenString(new TokenUtils.AuthorizationDto("test", new String[] {"todo:delete"}));
+
         given()
                 .when()
-                .auth().preemptive().basic("test", "test")
+                .header(HttpHeaders.AUTHORIZATION, authorization)
                 .delete("/api/todos/{id}", todo.id.toHexString())
                 .then()
                 .statusCode(204);
@@ -114,6 +129,7 @@ public class TodoResourceTest {
             .statusCode(200)
             .body("$.size", equalTo(3))
             .body("name", hasItems("Learn Quarkus", "Learn Kotlin", "Learn Hurling"))
+            .body("category", hasItems("LEARN", "LEARN", "HOBBY"))
             .body("personName", hasItems("Test", "Test", "Test"));
     }
 

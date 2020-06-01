@@ -1,6 +1,7 @@
 package com.github.springboot.service;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -40,42 +41,42 @@ public class PersonServiceImplTest {
     @Test
     public void whenCallSaveShouldSavePerson() {
         Person person = new Person();
-        when(personRepository.save(any())).thenReturn(Optional.of(person));
+        when(personRepository.save(any())).thenReturn(person);
 
-        PersonDto personDto = new PersonDto();
-        Optional<PersonDto> save = personService.save(personDto);
+        Optional<PersonDto> save = personService.save(any());
 
         assertThat(save.isPresent()).isTrue();
     }
 
     @Test
     public void whenCallFindByIdShouldFindPerson() {
-        Optional<Person> person = Optional.of(Person.builder().id("1").name("Test").build());
+        Optional<Person> person = Optional.of(new Person("Test", "me"));
         when(personRepository.findById(anyString())).thenReturn(person);
 
         Optional<PersonDto> personDto = personService.findById("123");
 
         assertThat(personDto.isPresent()).isTrue();
-        assertThat(personDto.get().getId()).isEqualTo("1");
+        assertThat(personDto.get().getId()).isNotEmpty();
         assertThat(personDto.get().getName()).isEqualTo("Test");
+        assertThat(personDto.get().getCreatedByUser()).isEqualTo("me");
     }
 
     @Test
     public void whenCallFindAllActiveCompaniesShouldReturnListOfPeople() {
         when(personRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(Arrays.asList(new Person(), new Person(), new Person())));
 
-        Stream<PersonDto> people = personService.findAll(10);
+        List<PersonDto> people = personService.findAll(10);
 
-        assertThat(people.count()).isEqualTo(3);
+        assertThat(people.size()).isEqualTo(3);
     }
 
     @Test
     public void whenCallFindCompaniesByUserShouldReturnListOfPeople() {
         when(personRepository.findPeopleByCreatedUser(anyString(), any(Pageable.class))).thenReturn(Stream.of(new Person(), new Person()));
 
-        Stream<PersonDto> people = personService.findPeopleByCreatedUser("me", 10);
+        List<PersonDto> people = personService.findPeopleByCreatedUser("me", 10);
 
-        assertThat(people.count()).isEqualTo(2);
+        assertThat(people.size()).isEqualTo(2);
     }
 
     @Test

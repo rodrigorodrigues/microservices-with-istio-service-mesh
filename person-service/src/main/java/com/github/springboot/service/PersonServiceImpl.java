@@ -1,7 +1,8 @@
 package com.github.springboot.service;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import com.github.springboot.dto.PersonDto;
 import com.github.springboot.model.Person;
@@ -11,9 +12,11 @@ import org.mapstruct.Mapper;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
+@Transactional
 public class PersonServiceImpl implements PersonService {
     private final PersonRepository personRepository;
 
@@ -31,16 +34,18 @@ public class PersonServiceImpl implements PersonService {
     }
 
     @Override
-    public Stream<PersonDto> findAll(Integer pageSize) {
+    public List<PersonDto> findAll(Integer pageSize) {
         return personRepository.findAll(PageRequest.of(0, pageSize))
 			.stream()
-			.map(personMapper::entityToDto);
+			.map(personMapper::entityToDto)
+			.collect(Collectors.toList());
     }
 
     @Override
-    public Stream<PersonDto> findPeopleByCreatedUser(String name, Integer pageSize) {
+    public List<PersonDto> findPeopleByCreatedUser(String name, Integer pageSize) {
         return personRepository.findPeopleByCreatedUser(name, PageRequest.of(0, pageSize))
-			.map(personMapper::entityToDto);
+			.map(personMapper::entityToDto)
+			.collect(Collectors.toList());
     }
 
     @Override

@@ -3,7 +3,6 @@ package com.github.springboot.dto;
 import java.time.Instant;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +18,5 @@ public class PersonDto {
     @NotBlank
     private String name;
     private String createdByUser;
-    @NotNull
     private Instant lastModifiedDate;
 }

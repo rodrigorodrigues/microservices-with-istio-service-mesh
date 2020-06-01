@@ -29,11 +29,14 @@ public class AppLifecycleBean {
 				Todo todo = new Todo();
 				todo.name = "Learn Quarkus";
 				todo.personId = "default@admin.com";
+				todo.category = Category.LEARN;
 				Todo todo1 = new Todo();
 				todo1.name = "Learn Kotlin";
+				todo1.category = Category.LEARN;
 				todo1.personId = "default@admin.com";
 				Todo todo2 = new Todo();
 				todo2.name = "Learn Hurling";
+				todo2.category = Category.HOBBY;
 				todo2.personId = "default@admin.com";
 				Todo.persist(Stream.of(todo, todo1, todo2));
 			}

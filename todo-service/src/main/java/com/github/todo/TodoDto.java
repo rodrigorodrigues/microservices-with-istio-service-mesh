@@ -1,6 +1,7 @@
 package com.github.todo;
 
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -10,20 +11,25 @@ public class TodoDto {
 	private String name;
 	@NotBlank
 	private String personId;
-	@NotBlank
 	private String personName;
-	private boolean activated;
+	private Boolean done;
 	@NotNull
-	private Instant lastModifiedDate = Instant.now();
+	private Instant createdDate = Instant.now();
+	@NotNull
+	private Instant plannedEndDate = Instant.now().plusSeconds(TimeUnit.DAYS.toSeconds(1));
+	@NotNull
+	private Category category;
 
 	TodoDto() {}
 
-	TodoDto(@NotBlank String name, @NotBlank String personId, @NotBlank String personName, boolean activated, @NotNull Instant lastModifiedDate) {
+	TodoDto(@NotBlank String name, @NotBlank String personId, @NotBlank String personName, Boolean done, @NotNull Instant createdDate, @NotNull Instant plannedEndDate, @NotNull Category category) {
 		this.name = name;
 		this.personId = personId;
 		this.personName = personName;
-		this.activated = activated;
-		this.lastModifiedDate = lastModifiedDate;
+		this.done = done;
+		this.createdDate = createdDate;
+		this.plannedEndDate = plannedEndDate;
+		this.category = category;
 	}
 
 	public String getName() {
@@ -42,20 +48,20 @@ public class TodoDto {
 		this.personId = personId;
 	}
 
-	public boolean isActivated() {
-		return activated;
+	public Boolean getDone() {
+		return done;
 	}
 
-	public void setActivated(boolean activated) {
-		this.activated = activated;
+	public void setDone(Boolean done) {
+		this.done = done;
 	}
 
-	public Instant getLastModifiedDate() {
-		return lastModifiedDate;
+	public Instant getCreatedDate() {
+		return createdDate;
 	}
 
-	public void setLastModifiedDate(Instant lastModifiedDate) {
-		this.lastModifiedDate = lastModifiedDate;
+	public void setCreatedDate(Instant createdDate) {
+		this.createdDate = createdDate;
 	}
 
 	public void setPersonName(String personName) {
@@ -64,5 +70,34 @@ public class TodoDto {
 
 	public String getPersonName() {
 		return personName;
+	}
+
+	public Instant getPlannedEndDate() {
+		return plannedEndDate;
+	}
+
+	public void setPlannedEndDate(Instant plannedEndDate) {
+		this.plannedEndDate = plannedEndDate;
+	}
+
+	public Category getCategory() {
+		return category;
+	}
+
+	public void setCategory(Category category) {
+		this.category = category;
+	}
+
+	@Override
+	public String toString() {
+		return "TodoDto{" +
+				"name='" + name + '\'' +
+				", personId='" + personId + '\'' +
+				", personName='" + personName + '\'' +
+				", done=" + done +
+				", createdDate=" + createdDate +
+				", plannedEndDate=" + plannedEndDate +
+				", category=" + category +
+				'}';
 	}
 }

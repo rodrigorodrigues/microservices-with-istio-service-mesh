@@ -1,5 +1,17 @@
 version: '3.2'
 services:
+  postgres-database:
+    image: postgres
+    container_name: postgres-database
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432:5432
+    networks:
+      net:
+        aliases:
+          - postgres-database
+
   mongodb-database:
     image: mongo:3.4.10
     command: mongod --port 27017
@@ -12,45 +24,63 @@ services:
           - mongodb-database
 
   eureka-server:
-    image: springcloud/eureka
+    image: eureka-server:0.0.1-SNAPSHOT
     container_name: eureka-server
-    environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
     ports:
       - 8761:8761
-    depends_on:
-      - config-server
-    links:
-      - config-server
     networks:
       net:
         aliases:
           - eureka-server
 
   config-server:
-    image: springcloud/configserver
+    image: config-server:0.0.1-SNAPSHOT
     container_name: config-server
     environment:
-      - EUREKA_SERVICE_URL=http://eureka-server:8761
+      - EUREKA_SERVER=http://eureka-server:8761/eureka/
       - SPRING_PROFILES_ACTIVE=native
-      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:./config-server
+      - SPRING_APPLICATION_NAME=config-server
+      - PATH_FILES=/config-server
+      - SERVER_PORT=8762
     ports:
-      - 8888:8888
+      - 8762:8762
     volumes:
       - ./config-server:/config-server:ro
+    depends_on:
+      - eureka-server
+    links:
+      - eureka-server
     networks:
       net:
         aliases:
           - config-server
 
+  admin-server:
+    image: zuul-server:0.0.1-SNAPSHOT
+    container_name: admin-server
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
+      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - SERVER_PORT=8763
+    ports:
+      - 8763:8763
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      net:
+        aliases:
+          - admin-server
+
   zuul-server:
     image: zuul-server:0.0.1-SNAPSHOT
     container_name: zuul-server
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - EUREKA_CLIENT_SERVICEURL_DEFAULT_ZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
+      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - SERVER_PORT=8764
     ports:
-      - 8080:8080
+      - 8764:8764
     depends_on:
       - eureka-server
       - config-server
@@ -59,18 +89,55 @@ services:
         aliases:
           - zuul-server
 
+  auth-service:
+    image: auth-service:0.0.1-SNAPSHOT
+    container_name: auth-service
+    environment:
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
+      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - CERT_PRIVATEKEY=/dummyAuthPrivateKey.pem
+      - CERT_PUBLICKEY=/dummyAuthPublicKey.pem
+      - SERVER_PORT=9999
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
+      - PRING_ZIPKIN_ENABLED=true
+    volumes:
+      - ./dummyAuthPrivateKey.pem:/dummyAuthPrivateKey.pem:ro
+      - ./dummyAuthPublicKey.pem:/dummyAuthPublicKey.pem:ro
+    ports:
+      - 9999:9999
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      net:
+        aliases:
+          - auth-service
+
   person-service:
     image: person-service:0.0.1-SNAPSHOT
     container_name: person-service
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - EUREKA_CLIENT_SERVICEURL_DEFAULT_ZONE=http://service-discovery:8761/eureka/
-      - SERVER_PORT=8081
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
+      - SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED=false
+      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - SERVER_PORT=8082
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-database:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_GENERATE_DDL=true
+      - CERT_PUBLICKEY=/dummyAuthPublicKey.pem
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
+      - PRING_ZIPKIN_ENABLED=true
+    volumes:
+      - ./dummyAuthPublicKey.pem:/dummyAuthPublicKey.pem:ro
     ports:
-      - 8081:8081
+      - 8082:8082
     depends_on:
       - eureka-server
-      - config-server
+      - postgres-database
+    links:
+      - postgres-database
+      - eureka-server
     networks:
       net:
         aliases:
@@ -80,9 +147,18 @@ services:
     image: todo-service
     container_name: todo-service
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - EUREKA_SERVER_URL=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
       - QUARKUS_HTTP_PORT=8083
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
+      - PRING_ZIPKIN_ENABLED=true
+      - PUBLIC_KEY_PATH=/dummyAuthPublicKey.pem
+      - MONGODB_URI=mongodb://mongodb-database:27017
+      - MONGODB_DATABASE=docker
+      - QUARKUS_METRICS_PATH=/actuator
+      - EUREKA_SERVER=todo-service
+    volumes:
+      - ./dummyAuthPublicKey.pem:/dummyAuthPublicKey.pem:ro
     ports:
       - 8083:8083
     depends_on:
@@ -142,5 +218,70 @@ services:
         aliases:
           - setup_grafana_datasource
 
+  zipkin-mysql:
+    image: openzipkin/zipkin-mysql
+    container_name: zipkin-mysql
+    networks:
+      net:
+        aliases:
+          - zipkin-mysql
+
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    # Environment settings are defined here https://github.com/openzipkin/zipkin/tree/1.19.0/zipkin-server#environment-variables
+    environment:
+      - EUREKA_SERVER=http://service-discovery:8761/eureka/
+      - STORAGE_TYPE=mysql
+      # Point the zipkin at the storage backend
+      - MYSQL_HOST=zipkin-mysql
+      - SERVER_PORT=9411
+      - MYSQL_USER=zipkin
+      - MYSQL_PASS=zipkin
+      - JAVA_OPTS=-verbose:gc -Xms512M -Xmx1G
+      #- DEBUG=true
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=debug
+      # Uncomment to enable scribe
+      # - SCRIBE_ENABLED=true
+      # Uncomment to enable self-tracing
+      # - SELF_TRACING_ENABLED=true
+      # Uncomment to enable debug logging
+      # - JAVA_OPTS=-Dlogging.level.zipkin=DEBUG -Dlogging.level.zipkin2=DEBUG
+    ports:
+      # Port used for the Zipkin UI and HTTP Api
+      - 9411:9411
+      # Uncomment if you set SCRIBE_ENABLED=true
+      # - 9410:9410
+    depends_on:
+      - zipkin-mysql
+    networks:
+      net:
+        aliases:
+          - zipkin
+
+  # Adds a cron to process spans since midnight every hour, and all spans each day
+  # This data is served by http://192.168.99.100:8080/dependency
+  #
+  # For more details, see https://github.com/openzipkin/docker-zipkin-dependencies
+  zipkin-dependencies:
+    image: openzipkin/zipkin-dependencies
+    container_name: zipkin-dependencies
+    entrypoint: crond -f
+    environment:
+      - STORAGE_TYPE=mysql
+      - MYSQL_HOST=zipkin-mysql
+      # Add the baked-in username and password for the zipkin-mysql image
+      - MYSQL_USER=zipkin
+      - MYSQL_PASS=zipkin
+      # Uncomment to see dependency processing logs
+      # - ZIPKIN_LOG_LEVEL=DEBUG
+      # Uncomment to adjust memory used by the dependencies job
+      - JAVA_OPTS=-verbose:gc -Xms512M -Xmx1G
+    depends_on:
+      - zipkin-mysql
+    networks:
+      net:
+        aliases:
+          - zipkin-dependencies
 networks:
   net:

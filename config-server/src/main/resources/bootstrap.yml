@@ -1,0 +1,19 @@
+server:
+  port: ${SERVER_PORT:8762}
+
+spring:
+  application:
+    name: config-server
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER:http://127.0.0.1:8761/eureka/}
+---
+spring:
+  profiles: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: ${PATH_FILES:file:./config-server/configuration/}

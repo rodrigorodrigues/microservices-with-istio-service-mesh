@@ -5,8 +5,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.UUID;
 
 import javax.validation.Valid;
 
@@ -18,6 +17,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import springfox.documentation.annotations.ApiIgnore;
 
 import org.springframework.http.HttpStatus;
@@ -55,13 +55,13 @@ public class PersonController {
     public ResponseEntity<List<PersonDto>> findAll(@ApiIgnore @AuthenticationPrincipal Authentication authentication,
         @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize) {
         log.debug("Hello({}) is authenticated? ({})", authentication.getName(), authentication.isAuthenticated());
-        Stream<PersonDto> people;
+        List<PersonDto> people;
         if (hasRoleAdmin(authentication)) {
             people = personService.findAll(pageSize);
         } else {
             people = personService.findPeopleByCreatedUser(authentication.getName(), pageSize);
         }
-        return ResponseEntity.ok(people.collect(Collectors.toList()));
+        return ResponseEntity.ok(people);
     }
 
     public ResponseEntity<List<PersonDto>> fallback(Authentication authentication, Integer pageSize) {
@@ -96,6 +96,9 @@ public class PersonController {
     public ResponseEntity<PersonDto> create(@RequestBody @ApiParam(required = true) @Valid PersonDto personDto,
             @ApiIgnore @AuthenticationPrincipal Authentication authentication) {
         personDto.setCreatedByUser(authentication.getName());
+        if (StringUtils.isBlank(personDto.getId())) {
+            personDto.setId(UUID.randomUUID().toString());
+        }
         return personService.save(personDto)
                 .map(p -> ResponseEntity.created(URI.create(String.format("/api/people/%s", p.getId())))
                         .body(p))

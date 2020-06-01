@@ -8,7 +8,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -31,9 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.data.mongodb.config.EnableMongoAuditing;
-import org.springframework.data.mongodb.core.mapping.event.ValidatingMongoEventListener;
-import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.context.support.GenericWebApplicationContext;
 
@@ -88,8 +85,7 @@ public class PersonServiceApplication {
 
     @ConditionalOnProperty(prefix = "configuration", name = "mongo", havingValue = "true", matchIfMissing = true)
     @Configuration
-    @EnableMongoAuditing
-    @EnableMongoRepositories(basePackageClasses = PersonRepository.class)
+    @EnableJpaRepositories(basePackageClasses = PersonRepository.class)
     static class MongoConfiguration {
     }
 
@@ -108,18 +104,13 @@ public class PersonServiceApplication {
     CommandLineRunner runner(PersonRepository personRepository) {
         return args -> {
             if (personRepository.count() == 0) {
-                List<Person> people = personRepository.saveAll(Arrays.asList(
-                    Person.builder().name("Admin").createdByUser("default@admin.com").build(),
-                    Person.builder().name("Test").createdByUser("default@admin.com").build(),
-                    Person.builder().name("Another Person").createdByUser("default@admin.com").build()));
+                Iterable<Person> people = personRepository.saveAll(Arrays.asList(
+                    new Person("Admin", "default@admin.com"),
+                    new Person("Test", "default@admin.com"),
+                    new Person("Another Person", "default@admin.com")));
                 log.debug("Saved Default People:size: {}", people);
             }
         };
-    }
-
-    @Bean
-    public ValidatingMongoEventListener validatingMongoEventListener() {
-        return new ValidatingMongoEventListener(validator());
     }
 
     @Primary

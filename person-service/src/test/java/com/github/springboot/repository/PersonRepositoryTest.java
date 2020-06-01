@@ -13,34 +13,28 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 @ExtendWith(SpringExtension.class)
-@DataMongoTest(properties = {"configuration.initialLoad=false", "logging.level.com.github.springboot=debug"})
+@DataJpaTest(properties = {"configuration.initialLoad=false", "logging.level.com.github.springboot=debug"})
 @Import({ObjectMapper.class})
+@Transactional
 public class PersonRepositoryTest {
     @Autowired
     PersonRepository personRepository;
 
     @BeforeEach
     public void setup() {
-        personRepository.save(Person.builder().name("Test")
-                .createdByUser("me")
-                .build());
-
-        personRepository.save(Person.builder().name("Test not active")
-                .createdByUser("me")
-                .build());
-
-        personRepository.save(Person.builder().name("Test 2")
-                .createdByUser("another_user")
-                .build());
+        personRepository.save(new Person("Test", "me"));
+        personRepository.save(new Person("Test not active", "me"));
+        personRepository.save(new Person("Test 2", "another_user"));
     }
 
     @Test

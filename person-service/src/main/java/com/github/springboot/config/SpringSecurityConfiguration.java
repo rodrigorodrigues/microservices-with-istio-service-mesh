@@ -31,7 +31,8 @@ public class SpringSecurityConfiguration extends WebSecurityConfigurerAdapter {
         "/**/*.html",
         "/favicon.ico",
         // other public endpoints of your API may be appended to this array
-        "/actuator/**"
+        "/actuator/**",
+        "/error"
     };
 
     @Bean

@@ -1,7 +1,7 @@
 package com.github.springboot.service;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import com.github.springboot.dto.PersonDto;
 
@@ -19,7 +19,7 @@ public interface PersonService {
     /**
      * Return a Person by id.
      * @param id id
-     * @return companyDto
+     * @return personDto
      */
     Optional<PersonDto> findById(String id);
 
@@ -28,7 +28,7 @@ public interface PersonService {
      * @param pageSize page size
      * @return list of users
      */
-    Stream<PersonDto> findAll(Integer pageSize);
+    List<PersonDto> findAll(Integer pageSize);
 
     /**
      * Return list of active companies by user
@@ -36,7 +36,7 @@ public interface PersonService {
      * @param pageSize page size
      * @return list of companies
      */
-    Stream<PersonDto> findPeopleByCreatedUser(String name, Integer pageSize);
+    List<PersonDto> findPeopleByCreatedUser(String name, Integer pageSize);
 
     /**
      * Delete a user by id.
