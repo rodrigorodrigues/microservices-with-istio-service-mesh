@@ -1,0 +1,139 @@
+import logging.config
+import os
+import sys
+
+from autologging import traced, logged
+from flask import Flask, request, Response
+from flask import jsonify, make_response
+from flask_jwt_extended import JWTManager, get_jwt_identity
+from flask_restx import fields, Resource
+from flask_zipkin import Zipkin
+from werkzeug.serving import run_simple
+
+from core.spring_cloud_setup import initialize_spring_cloud_client, initialize_dispatcher
+from core.api_setup import initialize_api
+from jwt_custom_decorator import admin_required
+
+app = Flask(__name__)
+app.config.from_envvar('ENV_FILE_LOCATION')
+app.debug = app.config['DEBUG']
+
+for v in os.environ:
+    env = os.getenv(v)
+    if v == 'SERVER_PORT':
+        env = int(env)
+    app.config[v] = env
+
+jwt = JWTManager(app)
+
+log = logging.getLogger(__name__)
+
+logging.basicConfig(
+    format="%(levelname)s [%(name)s %(funcName)s] %(message)s",
+    level=app.config['LOG_LEVEL'],
+    stream=sys.stdout
+)
+
+initialize_spring_cloud_client(app)
+api = initialize_api(app)
+
+ns = api.namespace('api/dashboards', description='Dashboard operations')
+
+categoryModel = api.model('DashboardTotalByCategory', {
+    'category': fields.String(required=True, description='Category Name'),
+    'total': fields.Integer(required=True, description='Total')
+})
+
+todoModel = api.model('Todo', {
+    'name': fields.String(required=True, description='Name'),
+    'createdDate': fields.DateTime(required=True, description='Created Date'),
+    'plannedEndDate': fields.DateTime(required=True, description='Planned Date'),
+    'done': fields.Boolean(required=True, description='Done?')
+})
+
+@traced(log)
+@logged(log)
+@ns.route('')
+class DashboardApi(Resource):
+    findAllPermissions = lambda f: admin_required(f, roles=['ROLE_ADMIN', 'ROLE_PRODUCTS_READ', 'ROLE_PRODUCTS_CREATE',
+                                                            'ROLE_PRODUCTS_SAVE', 'ROLE_PRODUCTS_DELETE'])
+
+    """Return list of products"""
+
+    @findAllPermissions
+    @ns.doc(description='List of categories',
+        params={'categoryName': 'Category Name', 'personId': 'Person Id', 'plannedDate': 'Planned Date', 'done': 'Todo done?'},
+        responses={
+        400: 'Validation Error',
+        401: 'Unauthorized',
+        403: 'Forbidden',
+        500: 'Unexpected Error'
+    })
+    @api.response(200, 'Success', [categoryModel])
+    def get(self, categoryName, personId, plannedDate, done):
+        log.debug('Get all products')
+        products = Product.objects().to_json()
+        return Response(products, mimetype="application/json", status=200)
+
+@app.errorhandler(Exception)
+def handle_root_exception(error):
+    """Return a custom message and 400 or 500 status code"""
+    log.exception(error)
+    if hasattr(error, 'errors'):
+        return make_response(jsonify(error=str(error.errors)), 400)
+    return make_response(jsonify(error=str(error)), 500)
+
+
+@app.route('/actuator/health')
+def health():
+    return jsonify({'status': 'OK'})
+
+
+server_port = app.config['SERVER_PORT']
+
+
+@app.route('/actuator/info')
+def actuator_info():
+    return jsonify({})
+
+
+@app.route('/actuator')
+def actuator_index():
+    port = server_port
+    actuator = {
+        "_links": {
+            "self": {
+                "href": "http://localhost:" + str(port) + "/actuator",
+                "templated": False
+            },
+            "health": {
+                "href": "http://localhost:" + str(port) + "/actuator/health",
+                "templated": False
+            },
+            "info": {
+                "href": "http://localhost:" + str(port) + "/actuator/info",
+                "templated": False
+            },
+            "prometheus": {
+                "href": "http://localhost:" + str(port) + "/actuator/prometheus",
+                "templated": False
+            },
+            "metrics": {
+                "href": "http://localhost:" + str(port) + "/actuator/metrics",
+                "templated": False
+            }
+        }
+    }
+    return jsonify(actuator)
+
+
+zipkin = Zipkin(sample_rate=int(app.config['ZIPKIN_RATIO']))
+zipkin.init_app(app)
+
+
+api.add_namespace(ns)
+debug_flag = app.config['DEBUG']
+
+
+if __name__ == "__main__":
+    run_simple(hostname="0.0.0.0", port=server_port, application=initialize_dispatcher(app), use_debugger=debug_flag)
