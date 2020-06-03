@@ -2,17 +2,16 @@ import logging.config
 import os
 import sys
 
+import requests
 from autologging import traced, logged
-from flask import Flask, request, Response
+from core.api_setup import initialize_api
+from core.spring_cloud_setup import initialize_spring_cloud_client, initialize_dispatcher
+from flask import Flask, Response
 from flask import jsonify, make_response
-from flask_jwt_extended import JWTManager, get_jwt_identity
+from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
 from flask_restx import fields, Resource
 from flask_zipkin import Zipkin
 from werkzeug.serving import run_simple
-
-from core.spring_cloud_setup import initialize_spring_cloud_client, initialize_dispatcher
-from core.api_setup import initialize_api
-from jwt_custom_decorator import admin_required
 
 app = Flask(__name__)
 app.config.from_envvar('ENV_FILE_LOCATION')
@@ -55,12 +54,9 @@ todoModel = api.model('Todo', {
 @logged(log)
 @ns.route('')
 class DashboardApi(Resource):
-    findAllPermissions = lambda f: admin_required(f, roles=['ROLE_ADMIN', 'ROLE_PRODUCTS_READ', 'ROLE_PRODUCTS_CREATE',
-                                                            'ROLE_PRODUCTS_SAVE', 'ROLE_PRODUCTS_DELETE'])
+    """Return list of categories"""
 
-    """Return list of products"""
-
-    @findAllPermissions
+    @jwt_required
     @ns.doc(description='List of categories',
         params={'categoryName': 'Category Name', 'personId': 'Person Id', 'plannedDate': 'Planned Date', 'done': 'Todo done?'},
         responses={
@@ -71,9 +67,10 @@ class DashboardApi(Resource):
     })
     @api.response(200, 'Success', [categoryModel])
     def get(self, categoryName, personId, plannedDate, done):
-        log.debug('Get all products')
-        products = Product.objects().to_json()
-        return Response(products, mimetype="application/json", status=200)
+        token = get_jwt_identity()
+        log.debug('Token: %s', token)
+        r = requests.get(app.config['TODO_URL'], headers={'Content-Type': 'application/json', 'Authorization': token})
+        return Response(r.text, status=r.status_code, headers=r.headers)
 
 @app.errorhandler(Exception)
 def handle_root_exception(error):

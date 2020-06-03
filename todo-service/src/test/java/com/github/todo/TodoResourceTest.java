@@ -133,4 +133,19 @@ public class TodoResourceTest {
             .body("personName", hasItems("Test", "Test", "Test"));
     }
 
+    @Test
+    @DisplayName("Test - When Calling GET - /api/todos/getTotalCategory should response all todos - 200 - OK")
+    public void testGetTotalCategory() throws Exception {
+        String authorization = tokenUtils.generateTokenString(new TokenUtils.AuthorizationDto("test", new String[] {"test"}));
+
+        given()
+            .when()
+            .header(HttpHeaders.AUTHORIZATION, authorization)
+            .get("/api/todos/getTotalCategory?personId=default@admin.com&done=false")
+            .then()
+            .statusCode(200)
+            .body("LEARN.name", hasItems("Learn Quarkus", "Learn Kotlin"))
+            .body("HOBBY.name", hasItems("Learn Hurling"));
+    }
+
 }

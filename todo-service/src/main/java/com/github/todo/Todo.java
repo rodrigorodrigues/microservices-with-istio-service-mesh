@@ -16,6 +16,7 @@ import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
 
 @MongoEntity(collection = "todos")
 public class Todo extends PanacheMongoEntity implements Serializable {
@@ -41,24 +42,25 @@ public class Todo extends PanacheMongoEntity implements Serializable {
             .list();
 	}
 
-	public static Map<Category, List<Todo>> findAllByCategory(Instant plannedEndDate, Boolean done) {
-		StringBuilder queryString = new StringBuilder();
-		int count = 0;
+	public static Map<Category, List<Todo>> findAllByCategory(Instant plannedEndDate, Boolean done, String personId) {
+		Document document = new Document();
 		if (done != null) {
-			queryString.append("done = ?").append(++count);
+			document.append("done", done);
 		}
 		if (plannedEndDate != null) {
-			queryString.append("plannedEndDate <= ?").append(++count);
+			document.append("plannedEndDate", plannedEndDate);
+		}
+		if (StringUtils.isNotBlank(personId)) {
+			document.append("personId", personId);
 		}
 		PanacheQuery<Todo> query;
-		if (StringUtils.isNotBlank(queryString)) {
-			query = find(queryString.toString(), plannedEndDate, done);
+		if (document.size() > 0) {
+			query = find(document);
 		} else {
 			query = findAll();
 		}
 		return query
 				.stream()
-				.map(t -> (Todo) t)
 				.collect(Collectors.groupingBy(t -> t.category,
 						TreeMap::new,
 						Collectors.mapping(t -> t, Collectors.toList())));

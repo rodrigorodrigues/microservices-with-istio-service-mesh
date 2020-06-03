@@ -2,7 +2,9 @@ package com.github.todo;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -91,6 +93,19 @@ public class TodoResource {
         List<TodoDto> todosDto = todoMapper.toResource(todos);
         todosDto.forEach(t -> t.setPersonName(getPersonNameByEureka(t.getPersonId())));
         return Response.ok(todosDto).build();
+    }
+
+    @Path("/getTotalCategory")
+    @GET
+    @RolesAllowed("**")
+    public Response getTotalCategory(@QueryParam("plannedEndDate") Date plannedEndDate,
+            @QueryParam("done") Boolean done,
+            @QueryParam("personId") String personId) {
+        Map<Category, List<TodoDto>> map = Todo.findAllByCategory((plannedEndDate != null ? plannedEndDate.toInstant() : null), done, personId)
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> todoMapper.toResource(e.getValue())));
+        return Response.ok(map).build();
     }
 
     public Response fallback(Integer pageSize, SecurityContext ctx) {
