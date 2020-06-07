@@ -34,12 +34,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @SpringBootApplication
-public class AuthServiceApplication {
-
-	private static Logger log = LoggerFactory.getLogger(AuthServiceApplication.class);
+public class IstioAuthServiceApplication {
+	private static Logger log = LoggerFactory.getLogger(IstioAuthServiceApplication.class);
 
 	public static void main(String[] args) {
-		new SpringApplicationBuilder(AuthServiceApplication.class)
+		new SpringApplicationBuilder(IstioAuthServiceApplication.class)
 				.initializers(new CertKeyConfigurationInitializer())
 				.run(args);
 	}

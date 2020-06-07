@@ -14,9 +14,9 @@ public class JwkSetEndpointConfiguration extends AuthorizationServerSecurityConf
 		super.configure(http);
 		http
 				.requestMatchers()
-				.mvcMatchers("/.well-known/jwks.json")
+				.mvcMatchers("/.well-known/jwks.json", "/actuator/**")
 				.and()
 				.authorizeRequests()
-				.mvcMatchers("/.well-known/jwks.json").permitAll();
+				.mvcMatchers("/.well-known/jwks.json", "/actuator/**").permitAll();
 	}
 }

@@ -20,15 +20,26 @@ scrape_configs:
       static_configs:
           - targets: ['0.0.0.0:9090']
 
-    - job_name: 'spring-actuator'
+    - job_name: 'auth-service'
       metrics_path: '/actuator/prometheus'
       scrape_interval: 15s
       static_configs:
-          - targets: ['spring-boot:8080']
+          - targets: ['auth-service:9999']
 
-    - job_name: 'quarkus'
+    - job_name: 'todo-service'
       metrics_path: '/metrics'
       scrape_interval: 15s
       static_configs:
-          - targets: ['quarkus:8081']
+          - targets: ['todo-service:8083']
 
+    - job_name: 'person-service'
+      metrics_path: '/actuator/prometheus'
+      scrape_interval: 15s
+      static_configs:
+        - targets: ['person-service:8082']
+
+    - job_name: 'zuul-server'
+      metrics_path: '/actuator/prometheus'
+      scrape_interval: 15s
+      static_configs:
+        - targets: ['zuul-server:8764']

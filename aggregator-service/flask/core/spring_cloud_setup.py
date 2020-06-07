@@ -23,10 +23,9 @@ def initialize_spring_cloud_client(app):
                        app_name=app_name,
                        instance_port=server_port)
 
-    public_key_location = app.config['CERT_PUBLICKEY']
+    public_key_location = app.config['JWT_PUBLIC_KEY']
 
     log.debug('public_key_location: %s', public_key_location)
-    app.config['JWT_PUBLIC_KEY'] = open(public_key_location, "r").read()
 
     log.debug('Config environment: %s', app.config)
 

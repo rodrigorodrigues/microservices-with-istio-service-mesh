@@ -2,6 +2,7 @@ import logging.config
 import os
 import sys
 
+import py_eureka_client.eureka_client as eureka_client
 import requests
 from autologging import traced, logged
 from core.api_setup import initialize_api
@@ -66,9 +67,11 @@ class DashboardApi(Resource):
         500: 'Unexpected Error'
     })
     @api.response(200, 'Success', [categoryModel])
-    def get(self, categoryName, personId, plannedDate, done):
+    def get(self, category_name=None, person_id=None, planned_date=None, done=None):
         token = get_jwt_identity()
         log.debug('Token: %s', token)
+        res = eureka_client.do_service("PERSON-SERVICE", app.config['TODO_URL'])
+        log.debug('res: %s', res)
         r = requests.get(app.config['TODO_URL'], headers={'Content-Type': 'application/json', 'Authorization': token})
         return Response(r.text, status=r.status_code, headers=r.headers)
 

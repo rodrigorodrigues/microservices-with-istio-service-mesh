@@ -56,7 +56,7 @@ services:
           - config-server
 
   admin-server:
-    image: zuul-server:0.0.1-SNAPSHOT
+    image: admin-server:0.0.1-SNAPSHOT
     container_name: admin-server
     environment:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
@@ -176,12 +176,6 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - 9090:9090
-#    depends_on:
-#      - spring-boot
-#      - quarkus
-#    links:
-#      - spring-boot
-#      - quarkus
     networks:
       net:
         aliases:
