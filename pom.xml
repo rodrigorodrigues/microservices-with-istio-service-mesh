@@ -9,15 +9,14 @@
 	<url>https://github.com/rodrigorodrigues/microservices-with-istio-service-mesh</url>
 	<version>0.0.1-SNAPSHOT</version>
 	<modules>
-		<module>auth-service</module>
+		<module>oauth-service</module>
 		<module>todo-service</module>
 		<module>person-service</module>
 		<module>zuul-server</module>
-		<module>eureka-server</module>
 		<module>config-server</module>
 		<module>admin-server</module>
-		<module>istio-auth-service</module>
-		<module>auth-common</module>
+		<module>istio-oauth-service</module>
+		<module>oauth-common</module>
 	</modules>
 	<packaging>pom</packaging>
 

@@ -5,10 +5,12 @@ spring:
   application:
     name: config-server
 
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: ${EUREKA_SERVER:http://127.0.0.1:8761/eureka/}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info, health, prometheus
+
 ---
 spring:
   profiles: native
@@ -16,4 +18,4 @@ spring:
     config:
       server:
         native:
-          search-locations: ${PATH_FILES:file:./config-server/configuration/}
+          search-locations: ${PATH_FILES:file:../docker-compose/config-server/}

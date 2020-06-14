@@ -1,9 +1,9 @@
 zuul:
   ignoredServices: '*'
   routes:
-    auth-service:
+    oauth-service:
       path: /oauth/**
-      serviceId: auth-service
+      serviceId: oauth-service
       stripPrefix: false
       sensitiveHeaders:
     person-service:

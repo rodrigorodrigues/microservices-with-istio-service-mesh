@@ -23,21 +23,24 @@ services:
         aliases:
           - mongodb-database
 
-  eureka-server:
-    image: eureka-server:0.0.1-SNAPSHOT
-    container_name: eureka-server
+  consul-service-discovery:
+    image: consul:latest
+    container_name: consul-service-discovery
     ports:
-      - 8761:8761
+      - 8500:8500
     networks:
       net:
         aliases:
-          - eureka-server
+          - consul-service-discovery
+    command: "agent -server -bootstrap -ui -client=0.0.0.0"
+    volumes:
+      - ./config-server:/config:ro
 
   config-server:
     image: config-server:0.0.1-SNAPSHOT
     container_name: config-server
     environment:
-      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
       - SPRING_PROFILES_ACTIVE=native
       - SPRING_APPLICATION_NAME=config-server
       - PATH_FILES=/config-server
@@ -47,9 +50,9 @@ services:
     volumes:
       - ./config-server:/config-server:ro
     depends_on:
-      - eureka-server
+      - consul-service-discovery
     links:
-      - eureka-server
+      - consul-service-discovery
     networks:
       net:
         aliases:
@@ -60,12 +63,12 @@ services:
     container_name: admin-server
     environment:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
       - SERVER_PORT=8763
     ports:
       - 8763:8763
     depends_on:
-      - eureka-server
+      - consul-service-discovery
       - config-server
     networks:
       net:
@@ -77,24 +80,24 @@ services:
     container_name: zuul-server
     environment:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
       - SERVER_PORT=8764
     ports:
       - 8764:8764
     depends_on:
-      - eureka-server
+      - consul-service-discovery
       - config-server
     networks:
       net:
         aliases:
           - zuul-server
 
-  auth-service:
-    image: auth-service:0.0.1-SNAPSHOT
-    container_name: auth-service
+  oauth-service:
+    image: oauth-service:0.0.1-SNAPSHOT
+    container_name: oauth-service
     environment:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
       - CERT_PRIVATEKEY=/dummyAuthPrivateKey.pem
       - CERT_PUBLICKEY=/dummyAuthPublicKey.pem
       - SERVER_PORT=9999
@@ -106,12 +109,12 @@ services:
     ports:
       - 9999:9999
     depends_on:
-      - eureka-server
+      - consul-service-discovery
       - config-server
     networks:
       net:
         aliases:
-          - auth-service
+          - oauth-service
 
   person-service:
     image: person-service:0.0.1-SNAPSHOT
@@ -119,7 +122,7 @@ services:
     environment:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
       - SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED=false
-      - EUREKA_SERVER=http://eureka-server:8761/eureka/
+      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
       - SERVER_PORT=8082
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-database:5432/postgres
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -133,11 +136,11 @@ services:
     ports:
       - 8082:8082
     depends_on:
-      - eureka-server
+      - consul-service-discovery
       - postgres-database
     links:
       - postgres-database
-      - eureka-server
+      - consul-service-discovery
     networks:
       net:
         aliases:
@@ -148,7 +151,7 @@ services:
     container_name: todo-service
     environment:
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - EUREKA_SERVER_URL=http://consul-service-discovery:8761/eureka/
       - QUARKUS_HTTP_PORT=8083
       - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
       - PRING_ZIPKIN_ENABLED=true
@@ -162,7 +165,7 @@ services:
     ports:
       - 8083:8083
     depends_on:
-      - eureka-server
+      - consul-service-discovery
       - config-server
     networks:
       net:

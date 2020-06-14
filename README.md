@@ -36,13 +36,13 @@ Your microservices might need some extra dependencies and could end up be someth
 <!-- Config Client -->
 <dependency>
     <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-starter-config</artifactId>
+    <artifactId>spring-cloud-starter-consul-config</artifactId>
 </dependency>
 
 <!-- Discovery Client -->
 <dependency>
     <groupId>org.springframework.cloud</groupId>
-    <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+    <artifactId>spring-cloud-starter-consul-discovery</artifactId>
 </dependency>
 
 <!-- Health Check -->

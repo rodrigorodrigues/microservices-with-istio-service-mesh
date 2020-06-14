@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: oauth-service
+  cloud:
+    consul:
+      config:
+        fail-fast: ${FAIL_FAST:true}
+        format: yaml
+      retry:
+        initial-interval: 8000
+        max-attempts: 6
+        max-interval: 128000
+        multiplier: 2
