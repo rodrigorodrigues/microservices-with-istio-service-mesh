@@ -1,0 +1,14 @@
+com:
+  github:
+    users:
+      -
+        username: admin
+        password: admin
+        scopes:
+          - admin
+      -
+        username: test
+        password: test
+        scopes:
+          - todo:read
+          - todo:update

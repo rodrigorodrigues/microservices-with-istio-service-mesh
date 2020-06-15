@@ -4,9 +4,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootApplication
-public class IstioAuthServiceApplication {
+public class OAuthServiceApplication {
+
 	public static void main(String[] args) {
-		new SpringApplicationBuilder(IstioAuthServiceApplication.class)
+		new SpringApplicationBuilder(OAuthServiceApplication.class)
 				.initializers(new CertKeyConfigurationInitializer())
 				.run(args);
 	}

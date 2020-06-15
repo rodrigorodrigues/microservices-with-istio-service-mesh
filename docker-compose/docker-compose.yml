@@ -36,28 +36,6 @@ services:
     volumes:
       - ./config-server:/config:ro
 
-  config-server:
-    image: config-server:0.0.1-SNAPSHOT
-    container_name: config-server
-    environment:
-      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
-      - SPRING_PROFILES_ACTIVE=native
-      - SPRING_APPLICATION_NAME=config-server
-      - PATH_FILES=/config-server
-      - SERVER_PORT=8762
-    ports:
-      - 8762:8762
-    volumes:
-      - ./config-server:/config-server:ro
-    depends_on:
-      - consul-service-discovery
-    links:
-      - consul-service-discovery
-    networks:
-      net:
-        aliases:
-          - config-server
-
   admin-server:
     image: admin-server:0.0.1-SNAPSHOT
     container_name: admin-server

@@ -13,7 +13,6 @@
 		<module>todo-service</module>
 		<module>person-service</module>
 		<module>zuul-server</module>
-		<module>config-server</module>
 		<module>admin-server</module>
 		<module>istio-oauth-service</module>
 		<module>oauth-common</module>

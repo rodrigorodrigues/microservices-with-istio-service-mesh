@@ -6,8 +6,3 @@ spring:
       config:
         format: yaml
         fail-fast: ${FAIL_FAST:true}
-      retry:
-        initial-interval: 8000
-        max-attempts: 6
-        max-interval: 128000
-        multiplier: 2
