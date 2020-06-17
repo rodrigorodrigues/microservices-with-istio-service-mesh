@@ -6,13 +6,17 @@ import py_eureka_client.eureka_client as eureka_client
 import requests
 from autologging import traced, logged
 from core.api_setup import initialize_api
-from core.spring_cloud_setup import initialize_spring_cloud_client, initialize_dispatcher
 from flask import Flask, Response
 from flask import jsonify, make_response
 from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
 from flask_restx import fields, Resource
 from flask_zipkin import Zipkin
 from werkzeug.serving import run_simple
+from prometheus_client import make_wsgi_app
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from flask_consulate import Consul
+from flask_prometheus_metrics import register_metrics
+
 
 app = Flask(__name__)
 app.config.from_envvar('ENV_FILE_LOCATION')
@@ -34,7 +38,6 @@ logging.basicConfig(
     stream=sys.stdout
 )
 
-initialize_spring_cloud_client(app)
 api = initialize_api(app)
 
 ns = api.namespace('api/dashboards', description='Dashboard operations')
@@ -133,6 +136,40 @@ zipkin.init_app(app)
 
 api.add_namespace(ns)
 debug_flag = app.config['DEBUG']
+
+def initialize_dispatcher(app):
+	initialize_consul(app)
+
+	# Plug metrics WSGI app to your main app with dispatcher
+	return DispatcherMiddleware(app.wsgi_app, {"/actuator/prometheus": make_wsgi_app()})
+
+
+def initialize_consul(app):
+	server_port = app.config['SERVER_PORT']
+
+	app_name = app.config['APP_NAME']
+	# Consul
+	# This extension should be the first one if enabled:
+	consul = Consul(app=app)
+	# Fetch the conviguration:
+	consul.apply_remote_config(namespace='mynamespace/')
+	# Register Consul service:
+	consul.register_service(
+		name=app_name,
+		interval='10s',
+		tags=['webserver', ],
+		port=server_port,
+		httpcheck='http://localhost:' + str(server_port) + '/actuator/health'
+	)
+
+	public_key_location = app.config['JWT_PUBLIC_KEY']
+
+	log.debug('public_key_location: %s', public_key_location)
+
+	log.debug('Config environment: %s', app.config)
+
+	# provide app's version and deploy environment/config name to set a gauge metric
+	register_metrics(app, app_version="v0.1.2", app_config="staging")
 
 
 if __name__ == "__main__":

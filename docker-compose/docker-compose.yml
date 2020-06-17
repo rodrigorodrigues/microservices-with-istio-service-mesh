@@ -40,14 +40,12 @@ services:
     image: admin-server:0.0.1-SNAPSHOT
     container_name: admin-server
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONSUL_HOST=consul-service-discovery
       - SERVER_PORT=8763
     ports:
       - 8763:8763
     depends_on:
       - consul-service-discovery
-      - config-server
     networks:
       net:
         aliases:
@@ -57,14 +55,12 @@ services:
     image: zuul-server:0.0.1-SNAPSHOT
     container_name: zuul-server
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
-      - SERVER_PORT=8764
+      - SPRING_CLOUD_CONSUL_HOST=consul-service-discovery
+      - SERVER_PORT=8080
     ports:
-      - 8764:8764
+      - 8080:8080
     depends_on:
       - consul-service-discovery
-      - config-server
     networks:
       net:
         aliases:
@@ -74,8 +70,7 @@ services:
     image: oauth-service:0.0.1-SNAPSHOT
     container_name: oauth-service
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONSUL_HOST=consul-service-discovery
       - CERT_PRIVATEKEY=/dummyAuthPrivateKey.pem
       - CERT_PUBLICKEY=/dummyAuthPublicKey.pem
       - SERVER_PORT=9999
@@ -88,7 +83,6 @@ services:
       - 9999:9999
     depends_on:
       - consul-service-discovery
-      - config-server
     networks:
       net:
         aliases:
@@ -98,9 +92,7 @@ services:
     image: person-service:0.0.1-SNAPSHOT
     container_name: person-service
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED=false
-      - EUREKA_SERVER=http://consul-service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONSUL_HOST=consul-service-discovery
       - SERVER_PORT=8082
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-database:5432/postgres
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -128,8 +120,7 @@ services:
     image: todo-service
     container_name: todo-service
     environment:
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8762
-      - EUREKA_SERVER_URL=http://consul-service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONSUL_HOST=consul-service-discovery
       - QUARKUS_HTTP_PORT=8083
       - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
       - PRING_ZIPKIN_ENABLED=true
@@ -144,7 +135,6 @@ services:
       - 8083:8083
     depends_on:
       - consul-service-discovery
-      - config-server
     networks:
       net:
         aliases:

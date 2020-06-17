@@ -1,6 +1,6 @@
 flask
 requests
-py_eureka_client
+flask_consulate
 flask_prometheus_metrics
 flask_jwt_extended
 flask_restx
