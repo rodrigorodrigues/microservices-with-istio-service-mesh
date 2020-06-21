@@ -42,7 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Slf4j
 @RestController
-@Api(value = "people", description = "Methods for managing people")
+@Api(value = "Methods for managing people")
 @RequestMapping("/api/people")
 @AllArgsConstructor
 public class PersonController {

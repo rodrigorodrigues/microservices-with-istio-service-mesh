@@ -2,21 +2,20 @@ import logging.config
 import os
 import sys
 
-import py_eureka_client.eureka_client as eureka_client
 import requests
 from autologging import traced, logged
-from core.api_setup import initialize_api
-from flask import Flask, Response
+from flask import Flask, request
 from flask import jsonify, make_response
-from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
+from flask import url_for
+from flask_consulate import Consul as Consulate
+from flask_jwt_extended import JWTManager, jwt_required
+from flask_prometheus_metrics import register_metrics
+from flask_restx import Api
 from flask_restx import fields, Resource
 from flask_zipkin import Zipkin
-from werkzeug.serving import run_simple
 from prometheus_client import make_wsgi_app
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from flask_consulate import Consul
-from flask_prometheus_metrics import register_metrics
-
+from werkzeug.serving import run_simple
 
 app = Flask(__name__)
 app.config.from_envvar('ENV_FILE_LOCATION')
@@ -38,6 +37,34 @@ logging.basicConfig(
     stream=sys.stdout
 )
 
+
+class CustomApi(Api):
+    @property
+    def specs_url(self):
+        """
+        The Swagger specifications absolute url (ie. `swagger.json`)
+
+        :rtype: str
+        """
+        return url_for(self.endpoint('specs'), _external=False)
+
+
+authorizations = {
+    'apikey': {
+        'type': 'apiKey',
+        'in': 'header',
+        'name': 'Authorization'
+    }
+}
+
+
+def initialize_api(app):
+    return CustomApi(app=app, catch_all_404s=True, version='1.0', title='API - Products Service',
+                     description='Products Management', doc='/swagger-ui.html',
+                     default_label='products endpoints', default='products',
+                     authorizations=authorizations, security='apikey')
+
+
 api = initialize_api(app)
 
 ns = api.namespace('api/dashboards', description='Dashboard operations')
@@ -54,6 +81,7 @@ todoModel = api.model('Todo', {
     'done': fields.Boolean(required=True, description='Done?')
 })
 
+
 @traced(log)
 @logged(log)
 @ns.route('')
@@ -62,21 +90,39 @@ class DashboardApi(Resource):
 
     @jwt_required
     @ns.doc(description='List of categories',
-        params={'categoryName': 'Category Name', 'personId': 'Person Id', 'plannedDate': 'Planned Date', 'done': 'Todo done?'},
-        responses={
-        400: 'Validation Error',
-        401: 'Unauthorized',
-        403: 'Forbidden',
-        500: 'Unexpected Error'
-    })
+            params={'categoryName': 'Category Name', 'personId': 'Person Id', 'plannedEndDate': 'Planned Date',
+                    'done': 'Todo done?'},
+            responses={
+                400: 'Validation Error',
+                401: 'Unauthorized',
+                403: 'Forbidden',
+                500: 'Unexpected Error'
+            })
     @api.response(200, 'Success', [categoryModel])
-    def get(self, category_name=None, person_id=None, planned_date=None, done=None):
-        token = get_jwt_identity()
+    def get(self):
+        token = request.headers.get('Authorization')
+        category_name = request.args.get('categoryName')
+        person_id = request.args.get('personId')
+        planned_end_date = request.args.get('plannedEndDate')
+        done = request.args.get('done')
         log.debug('Token: %s', token)
-        res = eureka_client.do_service("PERSON-SERVICE", app.config['TODO_URL'])
-        log.debug('res: %s', res)
-        r = requests.get(app.config['TODO_URL'], headers={'Content-Type': 'application/json', 'Authorization': token})
-        return Response(r.text, status=r.status_code, headers=r.headers)
+        url = app.config['TODO_URL']
+        query_param = '?'
+        if category_name is not None:
+            query_param += '&categoryName=' + category_name
+        if person_id is not None:
+            query_param += '&personId=' + person_id
+        if planned_end_date is not None:
+            query_param += '&plannedEndDate=' + planned_end_date
+        if done is not None:
+            query_param += '&done=' + done
+
+        if query_param != '?':
+            url += query_param
+        r = requests.get(url, headers={'Content-Type': 'application/json',
+                                                       'Authorization': token})
+        return make_response(r.json(), r.status_code)
+
 
 @app.errorhandler(Exception)
 def handle_root_exception(error):
@@ -133,43 +179,43 @@ def actuator_index():
 zipkin = Zipkin(sample_rate=int(app.config['ZIPKIN_RATIO']))
 zipkin.init_app(app)
 
-
 api.add_namespace(ns)
 debug_flag = app.config['DEBUG']
 
-def initialize_dispatcher(app):
-	initialize_consul(app)
 
-	# Plug metrics WSGI app to your main app with dispatcher
-	return DispatcherMiddleware(app.wsgi_app, {"/actuator/prometheus": make_wsgi_app()})
+def initialize_dispatcher(app):
+    initialize_consul(app)
+
+    # Plug metrics WSGI app to your main app with dispatcher
+    return DispatcherMiddleware(app.wsgi_app, {"/actuator/prometheus": make_wsgi_app()})
 
 
 def initialize_consul(app):
-	server_port = app.config['SERVER_PORT']
+    app_name = app.config['APP_NAME']
+    # Consul
+    # This extension should be the first one if enabled:
+    consul = Consulate(app=app)
+    # Fetch the conviguration:
+    consul.apply_remote_config(namespace='mynamespace/')
+    # Register Consul service:
+    consul.register_service(
+        name=app_name,
+        interval='10s',
+        tags=['webserver', ],
+        port=server_port,
+        httpcheck='http://localhost:' + str(server_port) + '/actuator/health'
+    )
 
-	app_name = app.config['APP_NAME']
-	# Consul
-	# This extension should be the first one if enabled:
-	consul = Consul(app=app)
-	# Fetch the conviguration:
-	consul.apply_remote_config(namespace='mynamespace/')
-	# Register Consul service:
-	consul.register_service(
-		name=app_name,
-		interval='10s',
-		tags=['webserver', ],
-		port=server_port,
-		httpcheck='http://localhost:' + str(server_port) + '/actuator/health'
-	)
+    public_key_location = app.config['JWT_PUBLIC_KEY']
 
-	public_key_location = app.config['JWT_PUBLIC_KEY']
+    log.debug('public_key_location: %s', public_key_location)
 
-	log.debug('public_key_location: %s', public_key_location)
+    app.config['JWT_PUBLIC_KEY'] = open(app.config['JWT_PUBLIC_KEY'], "r").read()
 
-	log.debug('Config environment: %s', app.config)
+    log.debug('Config environment: %s', app.config)
 
-	# provide app's version and deploy environment/config name to set a gauge metric
-	register_metrics(app, app_version="v0.1.2", app_config="staging")
+    # provide app's version and deploy environment/config name to set a gauge metric
+    register_metrics(app, app_version="v0.1.2", app_config="staging")
 
 
 if __name__ == "__main__":

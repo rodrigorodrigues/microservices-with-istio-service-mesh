@@ -28,12 +28,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.eureka.client.EurekaClient;
-import io.quarkus.eureka.client.loadBalancer.LoadBalanced;
-import io.quarkus.eureka.client.loadBalancer.LoadBalancerType;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import org.apache.http.HttpHeaders;
 import org.bson.types.ObjectId;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -41,6 +36,7 @@ import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Metered;
 import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.mapstruct.Mapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,14 +53,11 @@ public class TodoResource {
     TodoMapper todoMapper;
 
     @Inject
-    @LoadBalanced(type = LoadBalancerType.ROUND_ROBIN)
-    EurekaClient eurekaClient;
+    @RestClient
+    PersonService personService;
 
     @Inject
     JsonWebToken jwt;
-
-    @Inject
-    ObjectMapper objectMapper;
 
     @GET
     @Timed(name = "getAllTodosTimed",
@@ -91,7 +84,7 @@ public class TodoResource {
             todos = Todo.findTodosByPersonId(pageSize, ctx.getUserPrincipal().getName());
         }
         List<TodoDto> todosDto = todoMapper.toResource(todos);
-        todosDto.forEach(t -> t.setPersonName(getPersonNameByEureka(t.getPersonId())));
+        todosDto.forEach(t -> t.setPersonName(getPersonNameByService(t.getPersonId())));
         return Response.ok(todosDto).build();
     }
 
@@ -117,18 +110,12 @@ public class TodoResource {
                 .build();
     }
 
-    private String getPersonNameByEureka(String personId) {
+    private String getPersonNameByService(String personId) {
         try {
-            String json = eurekaClient.app("person-service")
-                    .path("/api/people/" + personId)
-                    .request(MediaType.APPLICATION_JSON_TYPE)
-                    .header(HttpHeaders.AUTHORIZATION, jwt.getRawToken())
-                    .get()
-                    .readEntity(String.class);
-            log.info("EurekaClient:json: {}", json);
-            return objectMapper.readValue(json, PersonDto.class).name;
+            log.info("Searching by personId: {}", personId);
+            return personService.getById(personId, "Bearer " + jwt.getRawToken()).getName();
         } catch (Exception e) {
-            log.warn("Error on method getPersonNameByEureka", e);
+            log.warn("Error on method getPersonNameByService", e);
             return "mocked-name";
         }
     }

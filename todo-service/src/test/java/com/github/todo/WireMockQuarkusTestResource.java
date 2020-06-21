@@ -14,9 +14,8 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.vertx.core.http.HttpHeaders;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 public class WireMockQuarkusTestResource implements QuarkusTestResourceLifecycleManager {
 	private static WireMockServer wireMockServer;
@@ -27,25 +26,19 @@ public class WireMockQuarkusTestResource implements QuarkusTestResourceLifecycle
 		wireMockServer.start();
 
 		String json;
-		int port = wireMockServer.port();
 		try {
 			json = String.join("", Files
-				.readAllLines(new File("src/test/resources/__files/instancesByApplicationName.json").toPath()))
-				.replaceAll("1111", String.valueOf(port));
+				.readAllLines(new File("src/test/resources/__files/person.json").toPath()));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 
-		wireMockServer.stubFor(get(urlEqualTo("/eureka/apps/PERSON-SERVICE")).willReturn(WireMock.aResponse()
+		wireMockServer.stubFor(get(anyUrl()).willReturn(WireMock.aResponse()
 				.withHeader(HttpHeaders.CONTENT_TYPE.toString(), MediaType.APPLICATION_JSON)
 				.withStatus(200)
 				.withBody(json)));
 
-		wireMockServer.stubFor(get(urlPathEqualTo("/api/people/default@admin.com")).willReturn(WireMock.aResponse()
-				.withHeader(HttpHeaders.CONTENT_TYPE.toString(), MediaType.APPLICATION_JSON)
-				.withStatus(200)
-				.withBody("{\"name\":\"Test\"}")));
-
+		int port = wireMockServer.port();
 		System.setProperty("WIREMOCK_PORT", String.valueOf(port));
 		return Collections.emptyMap();
 	}

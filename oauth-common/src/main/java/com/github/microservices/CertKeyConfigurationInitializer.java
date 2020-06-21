@@ -96,7 +96,7 @@ class CertKeyConfigurationInitializer implements ApplicationContextInitializer<G
 			if (!publicKeyFile.exists() || publicKeyFile.length() == 0) {
 				Files.write(publicKeyFile.toPath(),
 						Arrays.asList("-----BEGIN PUBLIC KEY-----", encoder
-								.encodeToString(pub.getEncoded()), "-----END PRIVATE KEY-----"));
+								.encodeToString(pub.getEncoded()), "-----END PUBLIC KEY-----"));
 				log.info("Loaded public key: {}", privateKeyFile.toPath());
 				applicationContext.registerBean(RSAPublicKey.class, () -> pub);
 			}

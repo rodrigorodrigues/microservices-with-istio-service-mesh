@@ -83,11 +83,6 @@
       <artifactId>commons-lang3</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.github.fmcejudo</groupId>
-      <artifactId>quarkus-eureka</artifactId>
-      <version>0.0.9</version>
-    </dependency>
-    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy-jackson</artifactId>
     </dependency>
@@ -95,8 +90,11 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-client</artifactId>
     </dependency>
-
-    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.microprofile-ext.config-ext</groupId>
+      <artifactId>configsource-consul</artifactId>
+      <version>1.0.9</version>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>

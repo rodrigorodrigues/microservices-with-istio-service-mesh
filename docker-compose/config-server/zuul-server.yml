@@ -11,8 +11,3 @@ zuul:
       serviceId: person-service
       stripPrefix: false
       sensitiveHeaders:
-    todo-service:
-      path: /api/todos/**
-      serviceId: todo-service
-      stripPrefix: false
-      sensitiveHeaders:
