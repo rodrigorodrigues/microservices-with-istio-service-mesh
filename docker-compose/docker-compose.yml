@@ -57,6 +57,7 @@ services:
     environment:
       - SPRING_CLOUD_CONSUL_HOST=consul-service-discovery
       - SERVER_PORT=8080
+      - todoUrl=http://todo-service:8083/api/todos
     ports:
       - 8080:8080
     depends_on:
@@ -120,7 +121,7 @@ services:
     image: todo-service
     container_name: todo-service
     environment:
-      - SPRING_CLOUD_CONSUL_HOST=consul-service-discovery
+      - CONFIGSOURCE_CONSUL_HOST=http://consul-service-discovery
       - QUARKUS_HTTP_PORT=8083
       - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
       - PRING_ZIPKIN_ENABLED=true
@@ -128,7 +129,7 @@ services:
       - MONGODB_URI=mongodb://mongodb-database:27017
       - MONGODB_DATABASE=docker
       - QUARKUS_METRICS_PATH=/actuator
-      - EUREKA_SERVER=todo-service
+      - LOG_LEVEL_JWT=DEBUG
     volumes:
       - ./dummyAuthPublicKey.pem:/dummyAuthPublicKey.pem:ro
     ports:
@@ -139,6 +140,28 @@ services:
       net:
         aliases:
           - person-service
+
+  aggregator-service:
+    build:
+      args:
+        - PORT=8084
+      context: ../aggregator-service
+    container_name: aggregator-service
+    environment:
+      - ENV_FILE_LOCATION=./.env
+      - CONSUL_HOST=consul-service-discovery
+      - TODO_URL
+      - SERVER_PORT=8084
+      - LOG_LEVEL=TRACE
+      - TODO_URL=http://todo-service:8083/api/todos/getTotalCategory
+    volumes:
+      - ./dummyAuthPublicKey.pem:/tmp/authPublicKey.pem:ro
+    ports:
+      - 8084:8084
+    networks:
+      net:
+        aliases:
+          - aggregator-service
 
   prometheus:
     image: prom/prometheus
@@ -196,7 +219,6 @@ services:
     container_name: zipkin
     # Environment settings are defined here https://github.com/openzipkin/zipkin/tree/1.19.0/zipkin-server#environment-variables
     environment:
-      - EUREKA_SERVER=http://service-discovery:8761/eureka/
       - STORAGE_TYPE=mysql
       # Point the zipkin at the storage backend
       - MYSQL_HOST=zipkin-mysql

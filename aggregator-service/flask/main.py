@@ -84,8 +84,8 @@ todoModel = api.model('Todo', {
 
 @traced(log)
 @logged(log)
-@ns.route('')
-class DashboardApi(Resource):
+@ns.route('/totalCategory')
+class DashboardCategoryApi(Resource):
     """Return list of categories"""
 
     @jwt_required
@@ -121,7 +121,14 @@ class DashboardApi(Resource):
             url += query_param
         r = requests.get(url, headers={'Content-Type': 'application/json',
                                                        'Authorization': token})
-        return make_response(r.json(), r.status_code)
+        json = r.json()
+        if r.status_code == 200:
+            array = []
+            for key in json:
+                array.append({'category': key, 'total': len(json[key])})
+            json = jsonify(array)
+
+        return make_response(json, r.status_code)
 
 
 @app.errorhandler(Exception)
@@ -196,7 +203,7 @@ def initialize_consul(app):
     # This extension should be the first one if enabled:
     consul = Consulate(app=app)
     # Fetch the conviguration:
-    consul.apply_remote_config(namespace='mynamespace/')
+    consul.apply_remote_config(namespace='config/'+app_name+'/data')
     # Register Consul service:
     consul.register_service(
         name=app_name,

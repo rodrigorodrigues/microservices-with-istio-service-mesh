@@ -24,6 +24,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 
 @QuarkusTest
 @QuarkusTestResource(EmbeddedMongoQuarkusTestResource.class)
@@ -146,6 +148,24 @@ public class TodoResourceTest {
             .statusCode(200)
             .body("LEARN.name", hasItems("Learn Quarkus", "Learn Kotlin"))
             .body("HOBBY.name", hasItems("Learn Hurling"));
+
+        given()
+                .when()
+                .header(HttpHeaders.AUTHORIZATION, authorization)
+                .get("/api/todos/getTotalCategory?categoryName=LEARN")
+                .then()
+                .statusCode(200)
+                .body("LEARN.name", hasItems("Learn Quarkus", "Learn Kotlin"))
+                .body("$", not(hasKey("HOBBY")));
+
+        given()
+                .when()
+                .header(HttpHeaders.AUTHORIZATION, authorization)
+                .get("/api/todos/getTotalCategory?categoryName=HO")
+                .then()
+                .statusCode(200)
+                .body("HOBBY.name", hasItems("Learn Hurling"))
+                .body("$", not(hasKey("LEARN")));
     }
 
 }

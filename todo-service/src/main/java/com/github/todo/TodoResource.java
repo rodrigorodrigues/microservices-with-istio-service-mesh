@@ -1,6 +1,8 @@
 package com.github.todo;
 
 import java.net.URI;
+import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -93,11 +95,16 @@ public class TodoResource {
     @RolesAllowed("**")
     public Response getTotalCategory(@QueryParam("plannedEndDate") Date plannedEndDate,
             @QueryParam("done") Boolean done,
-            @QueryParam("personId") String personId) {
-        Map<Category, List<TodoDto>> map = Todo.findAllByCategory((plannedEndDate != null ? plannedEndDate.toInstant() : null), done, personId)
+            @QueryParam("personId") String personId,
+            @QueryParam("categoryName") String categoryName) {
+        Instant plannedEndDateInstant = plannedEndDate != null ? plannedEndDate.toInstant() : null;
+        Map<Category, List<TodoDto>> map = Todo.findAllByCategory(plannedEndDateInstant, done, personId, categoryName)
                 .entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> todoMapper.toResource(e.getValue())));
+        map.values().stream()
+                .flatMap(Collection::stream)
+                .forEach(t -> t.setCategory(null));
         return Response.ok(map).build();
     }
 

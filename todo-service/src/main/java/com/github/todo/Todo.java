@@ -15,8 +15,8 @@ import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Parameters;
 import org.apache.commons.lang3.StringUtils;
-import org.bson.Document;
 
 @MongoEntity(collection = "todos")
 public class Todo extends PanacheMongoEntity implements Serializable {
@@ -42,24 +42,34 @@ public class Todo extends PanacheMongoEntity implements Serializable {
             .list();
 	}
 
-	public static Map<Category, List<Todo>> findAllByCategory(Instant plannedEndDate, Boolean done, String personId) {
-		Document document = new Document();
+	public static Map<Category, List<Todo>> findAllByCategory(Instant plannedEndDate, Boolean done,
+			String personId, String categoryName) {
+		Parameters parameters = new Parameters();
+		StringBuilder query = new StringBuilder();
 		if (done != null) {
-			document.append("done", done);
+			query.append(" and done = :done");
+			parameters.and("done", done);
 		}
 		if (plannedEndDate != null) {
-			document.append("plannedEndDate", plannedEndDate);
+			query.append(" and plannedEndDate <= :plannedEndDate");
+			parameters.and("plannedEndDate", plannedEndDate);
 		}
 		if (StringUtils.isNotBlank(personId)) {
-			document.append("personId", personId);
+			query.append(" and personId = :personId");
+			parameters.and("personId", personId);
 		}
-		PanacheQuery<Todo> query;
-		if (document.size() > 0) {
-			query = find(document);
+		if (StringUtils.isNotBlank(categoryName)) {
+			query.append(" and category like :category");
+			parameters.and("category", categoryName);
+		}
+		PanacheQuery<Todo> panacheQuery;
+		String queryString = query.toString();
+		if (StringUtils.isNotBlank(queryString)) {
+			panacheQuery = find(queryString.replaceFirst(" and ", ""), parameters);
 		} else {
-			query = findAll();
+			panacheQuery = findAll();
 		}
-		return query
+		return panacheQuery
 				.stream()
 				.collect(Collectors.groupingBy(t -> t.category,
 						TreeMap::new,
