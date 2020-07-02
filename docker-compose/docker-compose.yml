@@ -33,7 +33,19 @@ services:
         aliases:
           - consul-service-discovery
     command: "agent -server -bootstrap -ui -client=0.0.0.0"
+
+  consul-load-configuration:
+    image: appropriate/curl
+    container_name: consul-load-configuration
+    depends_on:
+      - consul-service-discovery
+    networks:
+      net:
+        aliases:
+          - consul-service-discovery
+    command: /load-consul-configuration.sh
     volumes:
+      - ./load-consul-configuration.sh:/load-consul-configuration.sh:ro
       - ./config-server:/config:ro
 
   admin-server:
@@ -141,27 +153,27 @@ services:
         aliases:
           - person-service
 
-  aggregator-service:
-    build:
-      args:
-        - PORT=8084
-      context: ../aggregator-service
-    container_name: aggregator-service
-    environment:
-      - ENV_FILE_LOCATION=./.env
-      - CONSUL_HOST=consul-service-discovery
-      - TODO_URL
-      - SERVER_PORT=8084
-      - LOG_LEVEL=TRACE
-      - TODO_URL=http://todo-service:8083/api/todos/getTotalCategory
-    volumes:
-      - ./dummyAuthPublicKey.pem:/tmp/authPublicKey.pem:ro
-    ports:
-      - 8084:8084
-    networks:
-      net:
-        aliases:
-          - aggregator-service
+#  aggregator-service:
+#    build:
+#      args:
+#        - PORT=8084
+#      context: ../aggregator-service
+#    container_name: aggregator-service
+#    environment:
+#      - ENV_FILE_LOCATION=./.env
+#      - CONSUL_HOST=consul-service-discovery
+#      - TODO_URL
+#      - SERVER_PORT=8084
+#      - LOG_LEVEL=TRACE
+#      - TODO_URL=http://todo-service:8083/api/todos/getTotalCategory
+#    volumes:
+#      - ./dummyAuthPublicKey.pem:/tmp/authPublicKey.pem:ro
+#    ports:
+#      - 8084:8084
+#    networks:
+#      net:
+#        aliases:
+#          - aggregator-service
 
   prometheus:
     image: prom/prometheus

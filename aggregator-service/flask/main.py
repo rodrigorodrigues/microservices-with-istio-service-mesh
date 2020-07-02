@@ -67,7 +67,7 @@ def initialize_api(app):
 
 api = initialize_api(app)
 
-ns = api.namespace('api/dashboards', description='Dashboard operations')
+ns = api.namespace('api/dashboard', description='Dashboard operations')
 
 categoryModel = api.model('DashboardTotalByCategory', {
     'category': fields.String(required=True, description='Category Name'),

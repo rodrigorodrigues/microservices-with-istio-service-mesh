@@ -1,6 +1,6 @@
 # microservices-with-istio-service-mesh
 
-The idea of this project is to show how to migrate from a traditional microservice architecture to `kubernetes and istio`.
+The idea of this project is to show how to migrate from a `traditional microservice` architecture to use `Kubernetes with Istio`.
 
 ## Requirements
 
@@ -154,3 +154,5 @@ Tracing - [Zipkin](https://zipkin.io/)
 As you can see there are a lot of things to maintain and the most important(`business value`) part is quite small(`todo, person and aggregator services`), of course this is just a silly example but now think in a `real world` with hundreds of microservices with business values how this can be `challengeable/mess`. 
 
 ## Microservice Architecture using k8s/istio
+
+TBC

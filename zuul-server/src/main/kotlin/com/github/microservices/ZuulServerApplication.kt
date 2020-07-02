@@ -53,11 +53,14 @@ class TodoRouters(private val handler: TodoHandler) {
 			}
 			DELETE("/{id}", handler::deleteById)
 		}
+		GET("/api/dashboard/totalCategory", handler::getDashboard)
 	}
 }
 
 @Component
-class TodoHandler(private val restTemplate: RestTemplate, @Value("\${todoUrl:http://localhost:8082/api/todos}") val url: String) {
+class TodoHandler(private val restTemplate: RestTemplate,
+				  @Value("\${todoUrl:http://localhost:8082/api/todos}") val url: String,
+				  @Value("\${dashboardUrl:http://localhost:8084/api/dashboard/totalCategory}") val dashboardUrl: String) {
 	fun create(req: ServerRequest) : ServerResponse {
 		val body = req.body(String::class.java)
 
@@ -90,6 +93,14 @@ class TodoHandler(private val restTemplate: RestTemplate, @Value("\${todoUrl:htt
 		val httpHeaders = generateHttpHeaders(req)
 
 		return processRequest("$url/$id", GET, HttpEntity(null, httpHeaders), String::class.java)
+	}
+
+	fun getDashboard(req: ServerRequest) : ServerResponse {
+		val httpHeaders = generateHttpHeaders(req)
+
+		val queryString = req.servletRequest().queryString
+		val url = if (queryString != null) "$dashboardUrl/getTotalCategory?$queryString" else "$dashboardUrl/getTotalCategory"
+		return processRequest(url, GET, HttpEntity(null, httpHeaders), String::class.java)
 	}
 
 	fun getTotalCategory(req: ServerRequest) : ServerResponse {

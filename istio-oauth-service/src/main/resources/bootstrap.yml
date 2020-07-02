@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: istio-oauth-service
+  cloud:
+    kubernetes:
+      config:
+        namespace: default
