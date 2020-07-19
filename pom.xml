@@ -16,6 +16,8 @@
 		<module>admin-server</module>
 		<module>istio-oauth-service</module>
 		<module>oauth-common</module>
+		<module>istio-person-service</module>
+		<module>person-common</module>
 	</modules>
 	<packaging>pom</packaging>
 

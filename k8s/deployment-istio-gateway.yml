@@ -54,6 +54,25 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
+  name: istio-person-service
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/people
+      route:
+        - destination:
+            host: istio-person-service
+            port:
+              number: 8081
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
   name: istio-oauth-service
 spec:
   hosts:

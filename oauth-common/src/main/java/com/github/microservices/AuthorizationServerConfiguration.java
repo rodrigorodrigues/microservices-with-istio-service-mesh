@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.config.annotation.builders.InMemoryClientDetailsServiceBuilder;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
@@ -29,21 +30,27 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
 	private final AuthenticationManager authenticationManager;
 	private final KeyPair keyPair;
 	private final PasswordEncoder passwordEncoder;
+	private final UserCredentialsProperties userCredentialsProperties;
 
 	public AuthorizationServerConfiguration(AuthenticationConfiguration authenticationConfiguration,
-			KeyPair keyPair, PasswordEncoder passwordEncoder) throws Exception {
+			KeyPair keyPair, PasswordEncoder passwordEncoder, UserCredentialsProperties userCredentialsProperties) throws Exception {
 		this.authenticationManager = authenticationConfiguration.getAuthenticationManager();
 		this.keyPair = keyPair;
 		this.passwordEncoder = passwordEncoder;
+		this.userCredentialsProperties = userCredentialsProperties;
 	}
 
 	@Override
 	public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-		clients
-				.inMemory()
-				.withClient("test")
-				.secret(passwordEncoder.encode("test"))
-				.authorizedGrantTypes("authorization_code", "client_credentials", "password", "refresh_token", "implicit");
+		InMemoryClientDetailsServiceBuilder inMemoryBuilder = clients.inMemory();
+		for(UserCredentialsProperties.User user : userCredentialsProperties.getUsers()) {
+			inMemoryBuilder
+					.withClient(user.getUsername())
+					.secret(passwordEncoder.encode(user.getPassword()))
+					.scopes(user.getScopes().toArray(new String[] {}))
+					.autoApprove(true)
+					.authorizedGrantTypes("authorization_code", "client_credentials", "password", "refresh_token", "implicit");
+		}
 	}
 
 	@Override

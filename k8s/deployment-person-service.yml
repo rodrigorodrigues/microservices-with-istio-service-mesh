@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-person-service
+  annotations:
+    cloud.google.com/app-protocols: '{"https-port":"HTTPS","http-port":"HTTP"}'
+  labels:
+    app: istio-person-service
+spec:
+  ports:
+    - name: https-port
+      port: 8443
+    - name: http-port
+      port: 8081
+  selector:
+    app: istio-person-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: istio-person-service
+spec:
+  selector:
+    matchLabels:
+      app: istio-person-service
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: istio-person-service
+        version: v1
+    spec:
+      containers:
+        - name: istio-person-service
+          image: istio-person-service:latest
+          imagePullPolicy: Never
+          resources:
+            requests:
+              memory: "256Mi"
+            limits:
+              memory: "512Mi"
+          volumeMounts:
+            - name: privatekey
+              mountPath: "/etc/private_key"
+              readOnly: true
+            - name: publickey
+              mountPath: "/etc/public_key"
+              readOnly: true
+          env:
+            - name: JAVA_OPTS
+              value: -Xms256m -Xmx512m
+            - name: SERVER_PORT
+              value: "8081"
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-service:5432/postgres
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-configuration
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-configuration
+                  key: POSTGRES_PASSWORD
+            - name: CERT_PUBLICKEY
+              value: /etc/public_key/dummyAuthPublicKey.pem
+            - name: LOGGING_LEVEL_COM_GITHUB_MICROSERVICES
+              value: DEBUG
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: update
+          ports:
+            - containerPort: 8081
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 200
+            periodSeconds: 5
+      volumes:
+        - name: publickey
+          secret:
+            secretName: publickey
+        - name: privatekey
+          secret:
+            secretName: privatekey

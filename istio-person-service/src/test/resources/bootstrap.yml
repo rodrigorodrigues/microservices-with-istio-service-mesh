@@ -1,0 +1,17 @@
+spring:
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    jwk-set-uri: http://localhost:${wiremock.server.port}/.well-known/jwks.json
+    profiles:
+        active: auth
+    main:
+        allow-bean-definition-overriding: true
+    cloud:
+        config:
+            enabled: false
+            discovery:
+                enabled: false
+        consul:
+            enabled: false

@@ -11,24 +11,19 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.github.microservices</groupId>
-	<artifactId>oauth-common</artifactId>
+	<artifactId>person-common</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>auth-common</name>
+	<name>person-common</name>
 
 	<properties>
 		<java.version>1.8</java.version>
+		<org.mapstruct.version>1.3.1.Final</org.mapstruct.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-			<scope>provided</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
 
 		<dependency>
@@ -37,15 +32,33 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.security.oauth.boot</groupId>
-			<artifactId>spring-security-oauth2-autoconfigure</artifactId>
-			<version>2.2.0.RELEASE</version>
+			<groupId>org.springframework.retry</groupId>
+			<artifactId>spring-retry</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>com.nimbusds</groupId>
-			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>8.17</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-oauth2-resource-server</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-oauth2-jose</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
 		<dependency>
@@ -54,12 +67,35 @@
 		</dependency>
 
 		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>2.5</version>
-			<scope>compile</scope>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>2.9.2</version>
 		</dependency>
 
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>2.9.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>${org.mapstruct.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct-processor</artifactId>
+			<version>${org.mapstruct.version}</version>
+		</dependency>
+
+		<!-- Test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -73,14 +109,22 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>pl.project13.maven</groupId>
+				<artifactId>git-commit-id-plugin</artifactId>
+				<configuration>
+					<failOnNoGitDirectory>false</failOnNoGitDirectory>
+				</configuration>
+			</plugin>
+
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
