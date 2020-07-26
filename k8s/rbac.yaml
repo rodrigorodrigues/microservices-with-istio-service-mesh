@@ -5,6 +5,8 @@ metadata:
 rules:
   - apiGroups:
       - ""
+      - "extensions"
+      - "apps"
     resources:
       - services
       - pods
@@ -28,3 +30,70 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: default
+#---
+#apiVersion: "security.istio.io/v1beta1"
+#kind: "PeerAuthentication"
+#metadata:
+#  name: "default"
+#  namespace: "default"
+#spec:
+#  mtls:
+#    mode: STRICT
+---
+apiVersion: "security.istio.io/v1beta1"
+kind: "RequestAuthentication"
+metadata:
+  name: "request-authentication-jwt"
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  jwtRules:
+    - issuer: "jwt"
+      jwksUri: "http://istio-oatuh-service/.well-known/jwks.json"
+      # Why this does not work?
+      #jwksUri: "http://istio-oatuh-service/.well-known/jwks.json"
+#---
+#apiVersion: "security.istio.io/v1beta1"
+#kind: "AuthorizationPolicy"
+#metadata:
+#  name: "deny-ingress"
+#  namespace: istio-system
+#spec:
+#  selector:
+#    matchLabels:
+#      istio: ingressgateway
+#  action: ALLOW
+#  rules:
+#    - from:
+#        - source:
+#            notRequestPrincipals: ["*"]
+#---
+#apiVersion: "security.istio.io/v1beta1"
+#kind: "AuthorizationPolicy"
+#metadata:
+#  name: "allow-jwks-ingress"
+#  namespace: istio-system
+#spec:
+#  selector:
+#    matchLabels:
+#      istio: ingressgateway
+#  action: ALLOW
+#  rules:
+#    - to:
+#        - operation:
+#            paths: ["/.well-known/jwks.json"]
+#---
+#kind: ClusterRoleBinding
+#apiVersion: rbac.authorization.k8s.io/v1
+#metadata:
+#  name: kubelet-api-admin
+#subjects:
+#  - kind: User
+#    name: kube-apiserver-kubelet-client
+#    apiGroup: rbac.authorization.k8s.io
+#roleRef:
+#  kind: ClusterRole
+#  name: system:kubelet-api-admin
+#  apiGroup: rbac.authorization.k8s.io
