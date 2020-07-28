@@ -17,6 +17,12 @@ public class UserCredentialsProperties {
 	@Size(min = 1)
 	private List<User> users;
 
+	@NotBlank
+	private String issuer = "istio-oauth-service";
+
+	@NotBlank
+	private String audience = "istio-oauth-service";
+
 	@Data
 	public static class User {
 		@NotBlank

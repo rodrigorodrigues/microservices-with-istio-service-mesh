@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: istio-oauth-service
-          image: istio-oauth-service:0.0.1-SNAPSHOT
+          image: istio-oauth-service:latest
           imagePullPolicy: Never
           resources:
             requests:

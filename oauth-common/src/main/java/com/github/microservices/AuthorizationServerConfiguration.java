@@ -86,8 +86,8 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
 				long currentTime = new Date().getTime() / 1000;
 				additionalInfo.put("iat", currentTime);
 				additionalInfo.put("nbf", currentTime);
-				additionalInfo.put("iss", "jwt");
-				additionalInfo.put("aud", "jwt");
+				additionalInfo.put("iss", userCredentialsProperties.getIssuer());
+				additionalInfo.put("aud", userCredentialsProperties.getAudience());
 				((DefaultOAuth2AccessToken) accessToken).setAdditionalInformation(additionalInfo);
 				return super.enhance(accessToken, authentication);
 			}

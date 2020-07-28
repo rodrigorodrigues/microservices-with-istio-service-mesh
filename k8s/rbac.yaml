@@ -45,30 +45,35 @@ kind: "RequestAuthentication"
 metadata:
   name: "request-authentication-jwt"
   namespace: istio-system
+  labels:
+    app: request-authentication-jwt
 spec:
   selector:
     matchLabels:
       istio: ingressgateway
   jwtRules:
-    - issuer: "jwt"
-      jwksUri: "http://istio-oatuh-service/.well-known/jwks.json"
-      # Why this does not work?
-      #jwksUri: "http://istio-oatuh-service/.well-known/jwks.json"
-#---
-#apiVersion: "security.istio.io/v1beta1"
-#kind: "AuthorizationPolicy"
-#metadata:
-#  name: "deny-ingress"
-#  namespace: istio-system
-#spec:
-#  selector:
-#    matchLabels:
-#      istio: ingressgateway
-#  action: ALLOW
-#  rules:
-#    - from:
-#        - source:
-#            notRequestPrincipals: ["*"]
+    - issuer: "https://istio-oauth-service.com"
+      jwksUri: "http://istio-oauth-service.default.svc.cluster.local:9999/.well-known/jwks.json"
+---
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "authorization-policy"
+  namespace: istio-system
+  labels:
+    app: authorization-policy
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  action: DENY
+  rules:
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+      to:
+        - operation:
+            paths: ["/api"]
 #---
 #apiVersion: "security.istio.io/v1beta1"
 #kind: "AuthorizationPolicy"
