@@ -99,7 +99,7 @@ class TodoHandler(private val restTemplate: RestTemplate,
 		val httpHeaders = generateHttpHeaders(req)
 
 		val queryString = req.servletRequest().queryString
-		val url = if (queryString != null) "$dashboardUrl/getTotalCategory?$queryString" else "$dashboardUrl/getTotalCategory"
+		val url = if (queryString != null) "$dashboardUrl?$queryString" else "$dashboardUrl"
 		return processRequest(url, GET, HttpEntity(null, httpHeaders), String::class.java)
 	}
 

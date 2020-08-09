@@ -39,5 +39,4 @@ class IstioOAuthServiceApplicationTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$..keys").isNotEmpty());
 	}
-
 }

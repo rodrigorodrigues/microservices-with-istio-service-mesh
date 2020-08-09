@@ -70,6 +70,12 @@ services:
       - SPRING_CLOUD_CONSUL_HOST=consul-service-discovery
       - SERVER_PORT=8080
       - todoUrl=http://todo-service:8083/api/todos
+      - dashboardUrl=http://aggregator-service:8084/api/dashboard/totalCategory
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
+      - SPRING_ZIPKIN_ENABLED=true
+      - DEBUG=true
+#      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=debug
+#      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=debug
     ports:
       - 8080:8080
     depends_on:
@@ -88,7 +94,10 @@ services:
       - CERT_PUBLICKEY=/dummyAuthPublicKey.pem
       - SERVER_PORT=9999
       - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
-      - PRING_ZIPKIN_ENABLED=true
+      - SPRING_ZIPKIN_ENABLED=true
+      - DEBUG=true
+#      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=debug
+#      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=debug
     volumes:
       - ./dummyAuthPrivateKey.pem:/dummyAuthPrivateKey.pem:ro
       - ./dummyAuthPublicKey.pem:/dummyAuthPublicKey.pem:ro
@@ -114,6 +123,7 @@ services:
       - CERT_PUBLICKEY=/dummyAuthPublicKey.pem
       - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411/
       - PRING_ZIPKIN_ENABLED=true
+#      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=debug
     volumes:
       - ./dummyAuthPublicKey.pem:/dummyAuthPublicKey.pem:ro
     ports:
@@ -153,27 +163,27 @@ services:
         aliases:
           - person-service
 
-#  aggregator-service:
-#    build:
-#      args:
-#        - PORT=8084
-#      context: ../aggregator-service
-#    container_name: aggregator-service
-#    environment:
-#      - ENV_FILE_LOCATION=./.env
-#      - CONSUL_HOST=consul-service-discovery
-#      - TODO_URL
-#      - SERVER_PORT=8084
-#      - LOG_LEVEL=TRACE
-#      - TODO_URL=http://todo-service:8083/api/todos/getTotalCategory
-#    volumes:
-#      - ./dummyAuthPublicKey.pem:/tmp/authPublicKey.pem:ro
-#    ports:
-#      - 8084:8084
-#    networks:
-#      net:
-#        aliases:
-#          - aggregator-service
+  aggregator-service:
+    build:
+      args:
+        - PORT=8084
+      context: ../aggregator-service
+    container_name: aggregator-service
+    environment:
+      - ENV_FILE_LOCATION=./.env
+      - CONSUL_HOST=consul-service-discovery
+      - TODO_URL
+      - SERVER_PORT=8084
+      - LOG_LEVEL=TRACE
+      - TODO_URL=http://todo-service:8083/api/todos/getTotalCategory
+    volumes:
+      - ./dummyAuthPublicKey.pem:/tmp/authPublicKey.pem:ro
+    ports:
+      - 8084:8084
+    networks:
+      net:
+        aliases:
+          - aggregator-service
 
   prometheus:
     image: prom/prometheus
@@ -239,7 +249,7 @@ services:
       - MYSQL_PASS=zipkin
       - JAVA_OPTS=-verbose:gc -Xms512M -Xmx1G
       #- DEBUG=true
-      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=debug
+#      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=debug
       # Uncomment to enable scribe
       # - SCRIBE_ENABLED=true
       # Uncomment to enable self-tracing

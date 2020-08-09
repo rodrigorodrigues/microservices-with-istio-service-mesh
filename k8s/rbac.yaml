@@ -2,6 +2,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: istio-oauth-service
+  labels:
+    app: rbac-role
 rules:
   - apiGroups:
       - ""
@@ -23,6 +25,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: istio-oauth-service
+  labels:
+    app: rbac-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -30,50 +34,38 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: default
-#---
-#apiVersion: "security.istio.io/v1beta1"
-#kind: "PeerAuthentication"
-#metadata:
-#  name: "default"
-#  namespace: "default"
-#spec:
-#  mtls:
-#    mode: STRICT
 ---
 apiVersion: "security.istio.io/v1beta1"
 kind: "RequestAuthentication"
 metadata:
-  name: "request-authentication-jwt"
-  namespace: istio-system
+  name: "request-authentication-jwt-person-service"
+  namespace: default
   labels:
-    app: request-authentication-jwt
+    app: request-authentication-jwt-person-service
 spec:
   selector:
     matchLabels:
-      istio: ingressgateway
+      app: istio-person-service
   jwtRules:
-    - issuer: "https://istio-oauth-service.com"
+    - issuer: "admin"
       jwksUri: "http://istio-oauth-service.default.svc.cluster.local:9999/.well-known/jwks.json"
 ---
 apiVersion: "security.istio.io/v1beta1"
 kind: "AuthorizationPolicy"
 metadata:
-  name: "authorization-policy"
-  namespace: istio-system
+  name: "authorization-policy-person-service"
+  namespace: default
   labels:
-    app: authorization-policy
+    app: authorization-policy-person-service
 spec:
   selector:
     matchLabels:
-      istio: ingressgateway
-  action: DENY
+      app: istio-person-service
+  action: ALLOW
   rules:
     - from:
         - source:
-            namespaces: ["istio-system"]
-      to:
-        - operation:
-            paths: ["/api"]
+            requestPrincipals: ["*"]
 #---
 #apiVersion: "security.istio.io/v1beta1"
 #kind: "AuthorizationPolicy"

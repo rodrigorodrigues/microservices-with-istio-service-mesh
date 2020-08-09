@@ -70,7 +70,7 @@ metadata:
 spec:
   storageClassName: postgres
   capacity:
-    storage: 1Gi
+    storage: 256Mi
   accessModes:
     - ReadWriteOnce
   hostPath:
@@ -90,7 +90,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 256Mi
       
 ---
 apiVersion: storage.k8s.io/v1

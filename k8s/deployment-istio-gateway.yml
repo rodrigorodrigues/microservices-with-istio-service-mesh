@@ -13,25 +13,6 @@ spec:
       hosts:
         - "*"
 ---
-#apiVersion: networking.istio.io/v1alpha3
-#kind: VirtualService
-#metadata:
-#  name: spring-boot
-#spec:
-#  hosts:
-#    - "*"
-#  gateways:
-#    - gateway
-#  http:
-#    - match:
-#        - uri:
-#            prefix: /api/companies
-#      route:
-#        - destination:
-#            host: spring-boot
-#            port:
-#              number: 8080
----
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -90,3 +71,40 @@ spec:
             host: istio-oauth-service
             port:
               number: 9999
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: istio-person-or-todo-service
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - gateway
+  http:
+    - match:
+        - uri:
+            exact: /api/people-or-todos
+        - headers:
+            user-preference:
+              exact: "people"
+      rewrite:
+        uri: /api/people
+      route:
+        - destination:
+            host: istio-person-service
+            port:
+              number: 8081
+    - match:
+        - uri:
+            exact: /api/people-or-todos
+        - headers:
+            user-preference:
+              exact: "todo"
+      rewrite:
+        uri: /api/todos
+      route:
+        - destination:
+            host: todo-service
+            port:
+              number: 8081

@@ -32,4 +32,4 @@ build/
 
 lsp
 
-k8s/istio-1.6.5/
+k8s/istio-*
