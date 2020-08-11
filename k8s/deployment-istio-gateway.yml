@@ -83,11 +83,12 @@ spec:
     - gateway
   http:
     - match:
-        - uri:
-            exact: /api/people-or-todos
         - headers:
             user-preference:
               exact: "people"
+          uri:
+            exact: /api/redirect
+          ignoreUriCase: true
       rewrite:
         uri: /api/people
       route:
@@ -96,11 +97,12 @@ spec:
             port:
               number: 8081
     - match:
-        - uri:
-            exact: /api/people-or-todos
         - headers:
             user-preference:
-              exact: "todo"
+              exact: "todos"
+          uri:
+            exact: /api/redirect
+          ignoreUriCase: true
       rewrite:
         uri: /api/todos
       route:

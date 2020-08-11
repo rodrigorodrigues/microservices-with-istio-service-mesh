@@ -63,6 +63,8 @@ spec:
               value: /actuator
             - name: LOG_LEVEL_JWT
               value: DEBUG
+            - name: PERSON_API_URL
+              value: http://istio-person-service.default.svc.cluster.local:8081/api/people
           ports:
             - containerPort: 8081
           livenessProbe:
